@@ -12,7 +12,7 @@ import {
   Cell, 
   Legend 
 } from 'recharts';
-import { Users, BookOpen, AlertCircle, CheckCircle, Filter } from 'lucide-react';
+import { Users, BookOpen, AlertCircle, CheckCircle, Filter, ChevronUp, ChevronDown, BarChart2 } from 'lucide-react';
 import { Assessment, AssessmentStatus, ClassGroup, Skill, Student, User } from '../types';
 
 interface DashboardProps {
@@ -28,11 +28,13 @@ interface PieChartData {
     name: string;
     value: number;
     color: string;
+    [key: string]: any;
 }
 
 interface BarChartData {
     name: string;
     taxa: number;
+    [key: string]: any;
 }
 
 interface SubjectStats {
@@ -50,6 +52,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onNavigateToRemediation 
 }) => {
   const [selectedTerm, setSelectedTerm] = useState('all');
+  const [showCharts, setShowCharts] = useState(true); // Controla a visibilidade dos gráficos
 
   // Filter Assessments based on Term
   const filteredAssessments = selectedTerm === 'all' 
@@ -73,7 +76,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
   ];
 
   // Bar Chart Data (Performance by Subject)
-  // FIXED: Removido <Record...> da chamada e movido para o valor inicial com 'as' para evitar erro de JSX
   const subjectPerformance = skills.reduce((acc, skill) => {
     const skillAssessments = filteredAssessments.filter(a => a.skillId === skill.id);
     if (skillAssessments.length === 0) return acc;
@@ -107,7 +109,19 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </p>
         </div>
         
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+           {/* Botão para Mostrar/Ocultar Gráficos */}
+           <button 
+             onClick={() => setShowCharts(!showCharts)}
+             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all border ${showCharts ? 'bg-[#eaddcf]/50 text-[#c48b5e] border-[#c48b5e]' : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'}`}
+           >
+              <BarChart2 size={16} />
+              {showCharts ? 'Ocultar Gráficos' : 'Mostrar Análises'}
+              {showCharts ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+           </button>
+
+           <div className="w-[1px] h-8 bg-[#eaddcf] mx-1 hidden md:block"></div>
+
            <div className="relative">
              <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#c48b5e]" size={16} />
              <select
@@ -122,15 +136,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 <option value="Recuperação">Recuperação</option>
              </select>
            </div>
-           
-           <span className="hidden md:inline-block bg-[#fcf9f6] border border-[#eaddcf] text-[#8c7e72] text-sm font-semibold px-4 py-2 rounded-full shadow-sm">
-             Ano {new Date().getFullYear()}
-           </span>
         </div>
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-in fade-in slide-in-from-top-4 duration-500">
         <KpiCard 
           title="Total de Alunos" 
           value={totalStudents} 
@@ -165,73 +175,81 @@ export const Dashboard: React.FC<DashboardProps> = ({
         />
       </div>
 
-      {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-[#eaddcf] transition-all hover:shadow-md">
-          <div className="flex justify-between items-center mb-4">
-             <h3 className="text-lg font-semibold text-[#433422]">Distribuição de Desempenho</h3>
-             {selectedTerm !== 'all' && <span className="text-xs bg-[#eaddcf] text-[#433422] px-2 py-1 rounded font-bold">{selectedTerm}</span>}
-          </div>
-          
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={pieData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={80}
-                  paddingAngle={5}
-                  dataKey="value"
-                >
-                  {pieData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-                <Legend verticalAlign="bottom" height={36}/>
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-[#eaddcf] transition-all hover:shadow-md">
-          <div className="flex justify-between items-start mb-4">
-              <div>
-                  <h3 className="text-lg font-semibold text-[#433422]">Taxa de Sucesso por Disciplina (%)</h3>
-                  <p className="text-xs text-gray-500">Considera "Atingiu" e "Superou"</p>
-              </div>
-              {selectedTerm !== 'all' && <span className="text-xs bg-[#eaddcf] text-[#433422] px-2 py-1 rounded font-bold">{selectedTerm}</span>}
-          </div>
-          
-          <div className="h-64">
-             {barData.length > 0 ? (
+      {/* Charts (Collapsible) */}
+      {showCharts && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in fade-in slide-in-from-top-4 duration-500">
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-[#eaddcf] transition-all hover:shadow-md">
+            <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold text-[#433422]">Distribuição de Desempenho</h3>
+                {selectedTerm !== 'all' && <span className="text-xs bg-[#eaddcf] text-[#433422] px-2 py-1 rounded font-bold">{selectedTerm}</span>}
+            </div>
+            
+            <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={barData} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E5E7EB" />
-                    <XAxis type="number" domain={[0, 100]} hide />
-                    <YAxis dataKey="name" type="category" width={100} tick={{fontSize: 12, fill: '#4B5563'}} />
-                    <Tooltip 
-                        cursor={{fill: '#F3F4F6'}} 
-                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
-                    />
-                    <Bar dataKey="taxa" fill="#c48b5e" radius={[0, 4, 4, 0]} barSize={20} name="Taxa de Sucesso">
-                        {barData.map((entry, index) => (
-                             <Cell key={`cell-${index}`} fill={entry.taxa > 70 ? '#10B981' : entry.taxa > 40 ? '#06b6d4' : '#F59E0B'} />
-                        ))}
-                    </Bar>
-                  </BarChart>
+                <PieChart>
+                    <Pie
+                    data={pieData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={5}
+                    dataKey="value"
+                    >
+                    {pieData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend verticalAlign="bottom" height={36}/>
+                </PieChart>
                 </ResponsiveContainer>
-             ) : (
-               <div className="h-full flex flex-col items-center justify-center text-gray-400 bg-gray-50 rounded-lg">
-                 <BookOpen size={32} className="mb-2 opacity-50" />
-                 <p className="text-sm">Sem dados suficientes neste período</p>
-               </div>
-             )}
-          </div>
+            </div>
+            </div>
+
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-[#eaddcf] transition-all hover:shadow-md">
+            <div className="flex justify-between items-start mb-4">
+                <div>
+                    <h3 className="text-lg font-semibold text-[#433422]">Taxa de Sucesso por Disciplina (%)</h3>
+                    <p className="text-xs text-gray-500">Considera "Atingiu" e "Superou"</p>
+                </div>
+                {selectedTerm !== 'all' && <span className="text-xs bg-[#eaddcf] text-[#433422] px-2 py-1 rounded font-bold">{selectedTerm}</span>}
+            </div>
+            
+            <div className="h-64">
+                {barData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={barData} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E5E7EB" />
+                        <XAxis type="number" domain={[0, 100]} hide />
+                        <YAxis dataKey="name" type="category" width={100} tick={{fontSize: 12, fill: '#4B5563'}} />
+                        <Tooltip 
+                            cursor={{fill: '#F3F4F6'}} 
+                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                        />
+                        <Bar dataKey="taxa" fill="#c48b5e" radius={[0, 4, 4, 0]} barSize={20} name="Taxa de Sucesso">
+                            {barData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.taxa > 70 ? '#10B981' : entry.taxa > 40 ? '#06b6d4' : '#F59E0B'} />
+                            ))}
+                        </Bar>
+                    </BarChart>
+                    </ResponsiveContainer>
+                ) : (
+                <div className="h-full flex flex-col items-center justify-center text-gray-400 bg-gray-50 rounded-lg">
+                    <BookOpen size={32} className="mb-2 opacity-50" />
+                    <p className="text-sm">Sem dados suficientes neste período</p>
+                </div>
+                )}
+            </div>
+            </div>
         </div>
-      </div>
+      )}
+      
+      {!showCharts && (
+          <div className="text-center py-4 bg-gray-50 rounded-xl border border-dashed border-gray-200 text-gray-400 text-sm">
+             Os gráficos estão ocultos. Clique em "Mostrar Análises" para visualizar.
+          </div>
+      )}
     </div>
   );
 };

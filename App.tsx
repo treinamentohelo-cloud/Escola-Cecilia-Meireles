@@ -9,9 +9,14 @@ import {
   Loader2, 
   Users, 
   GraduationCap, 
-  ClipboardCheck
+  ClipboardCheck,
+  Wifi,
+  WifiOff,
+  ChevronLeft,
+  ChevronRight,
+  Menu
 } from 'lucide-react';
-import { supabase } from './supabaseClient';
+import { api } from './supabaseClient'; // Agora importamos nosso cliente API customizado
 import { Dashboard } from './components/Dashboard';
 import { ClassList } from './components/ClassList';
 import { StudentManager } from './components/StudentManager';
@@ -33,21 +38,19 @@ import {
   Subject
 } from './types';
 
-// --- Mapeadores de Banco de Dados ---
+// --- Mapeadores de Banco de Dados (Snake Case -> Camel Case) ---
 
 const mapClassFromDB = (c: any): ClassGroup => ({
   id: c.id,
   name: c.name,
   grade: c.grade,
-  year: c.year,
+  year: Number(c.year),
   shift: c.shift,
   status: c.status,
-  // Tenta usar teacher_ids (novo), se não existir ou for vazio, tenta fallback para teacher_id (antigo)
-  teacherIds: (c.teacher_ids && c.teacher_ids.length > 0) 
-    ? c.teacher_ids 
-    : (c.teacher_id ? [c.teacher_id] : []),
-  isRemediation: c.is_remediation,
-  focusSkills: c.focus_skills || []
+  // Parse JSON string se vier como string do PHP
+  teacherIds: parseJsonField(c.teacher_ids) || (c.teacher_id ? [c.teacher_id] : []),
+  isRemediation: Boolean(Number(c.is_remediation)), // PHP retorna 0 ou 1
+  focusSkills: parseJsonField(c.focus_skills) || []
 });
 
 const mapStudentFromDB = (s: any): Student => ({
@@ -82,16 +85,24 @@ const mapLogFromDB = (l: any): ClassDailyLog => ({
   classId: l.class_id,
   date: l.date,
   content: l.content,
-  attendance: l.attendance
+  attendance: parseJsonField(l.attendance) || {}
 });
 
 const mapSkillFromDB = (s: any): Skill => ({
     id: s.id,
     code: s.code,
     description: s.description,
-    subject: s.subject || 'Geral', // Fallback caso subject seja null
+    subject: s.subject || 'Geral',
     year: s.year || '' 
 });
+
+// Helper para tratar campos JSON que podem vir como string do MySQL
+function parseJsonField(field: any) {
+    if (typeof field === 'string') {
+        try { return JSON.parse(field); } catch { return null; }
+    }
+    return field;
+}
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => !!localStorage.getItem('school_app_user'));
@@ -101,7 +112,10 @@ export default function App() {
   });
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [apiStatus, setApiStatus] = useState<boolean>(false); // Connection status
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true); // Sidebar state
+  
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
 
@@ -113,41 +127,39 @@ export default function App() {
   const [logs, setLogs] = useState<ClassDailyLog[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
 
+  // Check connection on mount
+  useEffect(() => {
+    const check = async () => {
+       const status = await api.checkConnection();
+       setApiStatus(status);
+    };
+    check();
+  }, []);
+
   const fetchData = async () => {
     try {
       setIsLoading(true);
 
-      // Carregamento independente para evitar que falha em uma tabela (ex: subjects ainda não criada) quebre tudo
-      const fetchSafe = async (table: string) => {
-          const { data, error } = await supabase.from(table).select('*');
-          if (error) {
-              console.warn(`Aviso: Não foi possível carregar ${table}.`, error.message);
-              return [];
-          }
-          return data || [];
-      };
-
       const [cl, st, sk, ass, us, lg, sb] = await Promise.all([
-        fetchSafe('classes'),
-        fetchSafe('students'),
-        fetchSafe('skills'),
-        fetchSafe('assessments'),
-        fetchSafe('users'),
-        fetchSafe('class_daily_logs'),
-        fetchSafe('subjects')
+        api.get('classes'),
+        api.get('students'),
+        api.get('skills'),
+        api.get('assessments'),
+        api.get('users'),
+        api.get('class_daily_logs'),
+        api.get('subjects')
       ]);
 
-      setClasses(cl.map(mapClassFromDB));
-      setStudents(st.map(mapStudentFromDB));
-      setSkills(sk.map(mapSkillFromDB));
-      setAssessments(ass.map(mapAssessmentFromDB));
-      setUsers(us); 
-      setLogs(lg.map(mapLogFromDB));
+      setClasses(Array.isArray(cl) ? cl.map(mapClassFromDB) : []);
+      setStudents(Array.isArray(st) ? st.map(mapStudentFromDB) : []);
+      setSkills(Array.isArray(sk) ? sk.map(mapSkillFromDB) : []);
+      setAssessments(Array.isArray(ass) ? ass.map(mapAssessmentFromDB) : []);
+      setUsers(Array.isArray(us) ? us : []); 
+      setLogs(Array.isArray(lg) ? lg.map(mapLogFromDB) : []);
       
-      if (sb.length > 0) {
+      if (Array.isArray(sb) && sb.length > 0) {
         setSubjects(sb.sort((a: any, b: any) => a.name.localeCompare(b.name)));
       } else {
-        // Fallback visual se a tabela subjects estiver vazia ou falhar
         setSubjects([
             { id: '1', name: 'Língua Portuguesa' },
             { id: '2', name: 'Matemática' },
@@ -156,10 +168,12 @@ export default function App() {
             { id: '5', name: 'Geografia' }
         ]);
       }
+      setApiStatus(true); // Success implies online
 
     } catch (err) {
       console.error('Erro crítico ao buscar dados:', err);
-      alert('Ocorreu um erro ao carregar os dados. Verifique a conexão ou contate o suporte.');
+      setApiStatus(false);
+      // alert('Ocorreu um erro ao carregar os dados. Verifique a conexão com a API.');
     } finally {
       setIsLoading(false);
     }
@@ -173,27 +187,22 @@ export default function App() {
   }, [isAuthenticated]);
 
   const handleLogin = async (email: string, pass: string): Promise<boolean> => {
-    let { data: dbUser, error } = await supabase.from('users').select('*').ilike('email', email).eq('password', pass).maybeSingle();
+    const user = await api.login(email, pass);
     
-    if (error) {
-        console.error("Erro no login:", error);
-        return false;
-    }
-
-    if (dbUser) {
-        if (dbUser.status === 'inactive') {
+    if (user) {
+        if (user.status === 'inactive') {
             alert('Acesso negado: Usuário inativo. Contate o administrador.');
             return false;
         }
 
-        setCurrentUser(dbUser);
+        setCurrentUser(user);
         setIsAuthenticated(true);
-        localStorage.setItem('school_app_user', JSON.stringify(dbUser));
+        localStorage.setItem('school_app_user', JSON.stringify(user));
         setCurrentPage('dashboard');
         return true;
     }
 
-    // Admin Backdoor (Apenas se não houver usuários no banco ou falha de conexão)
+    // Admin Backdoor
     if (email === 'admin@escola.com' && pass === '123456') {
       const activeUser = { id: 'admin-fallback', name: 'Admin Master', email: 'admin@escola.com', role: 'admin' as const, status: 'active' as const };
       setCurrentUser(activeUser);
@@ -212,358 +221,205 @@ export default function App() {
     setCurrentPage('dashboard');
   };
 
-  // --- CRUD OPERATIONS ---
+  // --- CRUD OPERATIONS (Usando nova API) ---
 
-  // 1. AVALIAÇÕES (COM LÓGICA AUTOMÁTICA DE REFORÇO)
   const handleAddAssessment = async (a: Assessment) => {
     try {
-      // 1. Inserir a Avaliação
-      const { error } = await supabase.from('assessments').insert([{
-        id: a.id,
-        student_id: a.studentId,
-        skill_id: a.skillId,
-        date: a.date,
-        status: a.status,
-        term: a.term,
-        notes: a.notes,
-        // Novos campos unificados
-        participation_score: a.participationScore,
-        behavior_score: a.behaviorScore,
-        exam_score: a.examScore
-      }]);
-      if (error) throw error;
+      await api.post('assessments', a);
 
-      // 2. Atualizar Status de Reforço do Aluno (Automação)
+      // Automação Reforço
       const student = students.find(s => s.id === a.studentId);
       if (student) {
-          const now = new Date().toISOString();
+          const now = new Date().toISOString().slice(0, 19).replace('T', ' '); // Format MySQL DATETIME
           let updateData: any = {};
 
-          // Cenário A: Resultado Positivo (SAÍDA DO REFORÇO)
           if (a.status === AssessmentStatus.ATINGIU || a.status === AssessmentStatus.SUPEROU) {
-              // Se o aluno está atualmente em reforço (tem entrada, mas não tem saída)
               if (student.remediationEntryDate && !student.remediationExitDate) {
-                  updateData = { remediation_exit_date: now };
-                  alert(`🎉 Parabéns! O desempenho do aluno registrou a SAÍDA automática do Reforço Escolar em ${new Date().toLocaleDateString()}.`);
+                  updateData = { remediationExitDate: now };
+                  alert(`🎉 Saída automática do Reforço registrada!`);
               }
           }
-          // Cenário B: Resultado Negativo (ENTRADA NO REFORÇO)
           else if (a.status === AssessmentStatus.NAO_ATINGIU || a.status === AssessmentStatus.EM_DESENVOLVIMENTO) {
-              // Se o aluno NÃO está em reforço (não tem entrada OU já saiu anteriormente)
               if (!student.remediationEntryDate || student.remediationExitDate) {
-                  updateData = { 
-                      remediation_entry_date: now, 
-                      remediation_exit_date: null // Reseta a saída para abrir um novo ciclo
-                  };
-                  alert(`⚠️ Atenção: Com base neste resultado, o aluno entrou automaticamente na lista de Reforço Escolar em ${new Date().toLocaleDateString()}.`);
+                  updateData = { remediationEntryDate: now, remediationExitDate: null };
+                  alert(`⚠️ Aluno adicionado ao Reforço Escolar.`);
               }
           }
 
-          // Executa a atualização no aluno se houver mudanças
           if (Object.keys(updateData).length > 0) {
-              const { error: studError } = await supabase
-                  .from('students')
-                  .update(updateData)
-                  .eq('id', student.id);
-              
-              if (studError) console.error("Erro ao atualizar status de reforço:", studError);
+              await api.put('students', student.id, updateData);
           }
       }
-
-      await fetchData(); // Refresh global
-    } catch (e: any) { 
-        alert('Erro ao salvar avaliação: ' + e.message); 
-    }
+      await fetchData();
+    } catch (e: any) { alert('Erro ao salvar: ' + e.message); }
   };
 
   const handleDeleteAssessment = async (id: string) => {
-      try {
-          const { error } = await supabase.from('assessments').delete().eq('id', id);
-          if (error) throw error;
-          await fetchData();
-      } catch(e: any) { alert('Erro ao excluir: ' + e.message); }
+      try { await api.delete('assessments', id); await fetchData(); } catch(e: any) { alert('Erro: ' + e.message); }
   }
 
-  // 2. TURMAS
   const handleAddClass = async (c: ClassGroup) => {
-    try {
-      const { error } = await supabase.from('classes').insert([{
-        id: c.id,
-        name: c.name,
-        grade: c.grade,
-        year: c.year,
-        shift: c.shift,
-        status: c.status,
-        teacher_ids: c.teacherIds, // Salva o array de IDs
-        teacher_id: c.teacherIds && c.teacherIds.length > 0 ? c.teacherIds[0] : null, // Compatibilidade legado
-        is_remediation: c.isRemediation,
-        focus_skills: c.focusSkills
-      }]);
-      if (error) throw error;
-      await fetchData();
-    } catch (e: any) { alert('Erro ao salvar turma: ' + e.message); }
+    try { await api.post('classes', c); await fetchData(); } catch (e: any) { alert('Erro: ' + e.message); }
   };
 
   const handleUpdateClass = async (c: ClassGroup) => {
-      try {
-          const { error } = await supabase.from('classes').update({
-              name: c.name,
-              grade: c.grade,
-              year: c.year,
-              shift: c.shift,
-              status: c.status,
-              teacher_ids: c.teacherIds, // Atualiza array
-              teacher_id: c.teacherIds && c.teacherIds.length > 0 ? c.teacherIds[0] : null, // Compatibilidade legado
-              is_remediation: c.isRemediation,
-              focus_skills: c.focusSkills
-          }).eq('id', c.id);
-          if (error) throw error;
-          await fetchData();
-      } catch (e: any) { alert('Erro ao atualizar turma: ' + e.message); }
+      try { await api.put('classes', c.id, c); await fetchData(); } catch (e: any) { alert('Erro: ' + e.message); }
   };
 
   const handleToggleClassStatus = async (id: string, currentStatus: 'active' | 'inactive') => {
-      try {
-          const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
-          const { error } = await supabase.from('classes').update({ status: newStatus }).eq('id', id);
-          if (error) throw error;
-          await fetchData();
-      } catch (e: any) { alert('Erro ao alterar status da turma: ' + e.message); }
+      const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+      try { await api.put('classes', id, { status: newStatus }); await fetchData(); } catch (e: any) { alert('Erro: ' + e.message); }
   };
 
   const handleDeleteClass = async (id: string) => {
-      try {
-          const { error } = await supabase.from('classes').delete().eq('id', id);
-          if(error) {
-              if (error.message.includes('violates foreign key constraint') || error.code === '23503') {
-                  alert('Não é possível excluir esta turma pois existem registros vinculados (Alunos). Por favor, utilize a opção "Inativar" para arquivá-la.');
-              } else {
-                  throw error;
-              }
-          } else {
-              await fetchData();
-          }
-      } catch(e: any) { alert('Erro ao excluir turma: ' + e.message); }
+      try { await api.delete('classes', id); await fetchData(); } catch(e: any) { alert('Erro (Verifique se há alunos vinculados): ' + e.message); }
   };
 
-  // 3. ALUNOS
   const handleAddStudent = async (s: Student) => {
-      try {
-          const { error } = await supabase.from('students').insert([{
-              id: s.id,
-              name: s.name,
-              class_id: s.classId,
-              avatar_url: s.avatarUrl,
-              registration_number: s.registrationNumber,
-              birth_date: s.birthDate,
-              parent_name: s.parentName,
-              phone: s.phone,
-              status: s.status
-          }]);
-          if(error) throw error;
-          await fetchData();
-      } catch(e: any) { alert('Erro ao cadastrar aluno: ' + e.message); }
+      try { await api.post('students', s); await fetchData(); } catch(e: any) { alert('Erro: ' + e.message); }
   };
 
   const handleUpdateStudent = async (s: Student) => {
-    try {
-      const { error } = await supabase.from('students').update({
-        name: s.name,
-        class_id: s.classId,
-        avatar_url: s.avatarUrl,
-        registration_number: s.registrationNumber,
-        birth_date: s.birthDate,
-        parent_name: s.parentName,
-        phone: s.phone,
-        status: s.status,
-        remediation_entry_date: s.remediationEntryDate,
-        remediation_exit_date: s.remediationExitDate
-      }).eq('id', s.id);
-      if (error) throw error;
-      await fetchData();
-    } catch (e: any) { alert('Erro ao atualizar aluno: ' + e.message); }
+    try { await api.put('students', s.id, s); await fetchData(); } catch (e: any) { alert('Erro: ' + e.message); }
   };
 
   const handleToggleStudentStatus = async (id: string, currentStatus: 'active' | 'inactive') => {
-      try {
-          const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
-          const { error } = await supabase.from('students').update({ status: newStatus }).eq('id', id);
-          if (error) throw error;
-          await fetchData();
-      } catch (e: any) { alert('Erro ao alterar status do aluno: ' + e.message); }
+      const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+      try { await api.put('students', id, { status: newStatus }); await fetchData(); } catch (e: any) { alert('Erro: ' + e.message); }
   };
 
   const handleDeleteStudent = async (id: string) => {
-      try {
-          const { error } = await supabase.from('students').delete().eq('id', id);
-          if(error) {
-             if (error.message.includes('violates foreign key constraint') || error.code === '23503') {
-                 alert('Não é possível excluir este aluno pois existem avaliações vinculadas. Por favor, utilize a opção "Inativar".');
-             } else {
-                 throw error;
-             }
-          } else {
-              await fetchData();
-          }
-      } catch(e: any) { alert('Erro ao excluir aluno: ' + e.message); }
+      try { await api.delete('students', id); await fetchData(); } catch(e: any) { alert('Erro: ' + e.message); }
   };
 
-  // 4. HABILIDADES
   const handleAddSkill = async (s: Skill) => {
-      try {
-          const { error } = await supabase.from('skills').insert([{
-              id: s.id,
-              code: s.code,
-              description: s.description,
-              subject: s.subject,
-              year: s.year
-          }]);
-          if(error) throw error;
-          await fetchData();
-      } catch(e:any) { alert('Erro ao salvar habilidade: ' + e.message); }
+      try { await api.post('skills', s); await fetchData(); } catch(e:any) { alert('Erro: ' + e.message); }
   };
 
   const handleUpdateSkill = async (s: Skill) => {
-      try {
-          const { error } = await supabase.from('skills').update({
-              code: s.code,
-              description: s.description,
-              subject: s.subject,
-              year: s.year
-          }).eq('id', s.id);
-          if(error) throw error;
-          await fetchData();
-      } catch(e:any) { alert('Erro ao atualizar habilidade: ' + e.message); }
+      try { await api.put('skills', s.id, s); await fetchData(); } catch(e:any) { alert('Erro: ' + e.message); }
   };
 
   const handleDeleteSkill = async (id: string) => {
-      try {
-          const { error } = await supabase.from('skills').delete().eq('id', id);
-          if(error) throw error;
-          await fetchData();
-      } catch(e:any) { alert('Erro ao excluir habilidade: ' + e.message); }
+      try { await api.delete('skills', id); await fetchData(); } catch(e:any) { alert('Erro: ' + e.message); }
   };
 
-  // 5. DISCIPLINAS
   const handleAddSubject = async (sub: Subject) => {
-      try {
-          const { error } = await supabase.from('subjects').insert([{ id: sub.id, name: sub.name }]);
-          if (error) throw error;
-          await fetchData();
-      } catch (e: any) { alert('Erro ao criar disciplina: ' + e.message); }
+      try { await api.post('subjects', sub); await fetchData(); } catch (e: any) { alert('Erro: ' + e.message); }
   }
 
-  // 6. USUÁRIOS
   const handleAddUser = async (u: User) => {
-      try {
-          const { error } = await supabase.from('users').insert([{
-              id: u.id,
-              name: u.name,
-              email: u.email,
-              password: u.password,
-              role: u.role,
-              status: u.status || 'active'
-          }]);
-          if(error) throw error;
-          await fetchData();
-      } catch(e:any) { alert('Erro ao criar usuário: ' + e.message); }
+      try { await api.post('users', u); await fetchData(); } catch(e:any) { alert('Erro: ' + e.message); }
   };
 
   const handleUpdateUser = async (u: User) => {
-      try {
-          const payload: any = {
-              name: u.name,
-              email: u.email,
-              role: u.role,
-              status: u.status
-          };
-          if(u.password) payload.password = u.password;
-
-          const { error } = await supabase.from('users').update(payload).eq('id', u.id);
-          if(error) throw error;
-          await fetchData();
-      } catch(e:any) { alert('Erro ao atualizar usuário: ' + e.message); }
+      try { await api.put('users', u.id, u); await fetchData(); } catch(e:any) { alert('Erro: ' + e.message); }
   };
 
   const handleDeleteUser = async (id: string) => {
       try {
-          // Check dependency: Is this user a teacher in any class?
           const linkedClasses = classes.filter(c => c.teacherIds?.includes(id));
-
           if (linkedClasses.length > 0) {
-              const confirmSoft = window.confirm(`⚠️ Este usuário é responsável por ${linkedClasses.length} turma(s).\n\nA exclusão física não é permitida para manter a integridade dos dados.\n\nDeseja INATIVAR o usuário, bloqueando seu acesso?`);
+              const confirmSoft = window.confirm(`⚠️ Este usuário possui turmas. Deseja apenas INATIVAR?`);
               if (confirmSoft) {
-                  const { error } = await supabase.from('users').update({ status: 'inactive' }).eq('id', id);
-                  if (error) throw error;
-                  alert('Usuário inativado com sucesso.');
+                  await api.put('users', id, { status: 'inactive' });
                   await fetchData();
               }
               return;
           }
-
-          const { error } = await supabase.from('users').delete().eq('id', id);
-          if(error) throw error;
+          await api.delete('users', id);
           await fetchData();
-      } catch(e:any) { alert('Erro ao excluir usuário: ' + e.message); }
+      } catch(e:any) { alert('Erro: ' + e.message); }
   };
 
-  // 7. LOGS
   const handleAddLog = async (l: ClassDailyLog) => {
-    try {
-      const { error } = await supabase.from('class_daily_logs').insert([{
-        id: l.id,
-        class_id: l.classId,
-        date: l.date,
-        content: l.content,
-        attendance: l.attendance
-      }]);
-      if (error) throw error;
-      await fetchData();
-    } catch (e: any) { alert('Erro ao salvar diário: ' + e.message); }
+    try { await api.post('class_daily_logs', l); await fetchData(); } catch (e: any) { alert('Erro: ' + e.message); }
   };
 
   const handleDeleteLog = async (id: string) => {
-      try {
-          const { error } = await supabase.from('class_daily_logs').delete().eq('id', id);
-          if(error) throw error;
-          await fetchData();
-      } catch(e:any) { alert('Erro ao excluir diário: ' + e.message); }
+      try { await api.delete('class_daily_logs', id); await fetchData(); } catch(e:any) { alert('Erro: ' + e.message); }
   }
-
 
   if (!isAuthenticated) return <Login onLogin={handleLogin} />;
   if (isLoading) return <div className="h-screen flex items-center justify-center bg-[#fdfbf7]"><Loader2 className="animate-spin text-[#c48b5e]" size={40} /></div>;
 
   return (
     <div className="flex h-screen bg-[#fdfbf7] overflow-hidden font-sans">
-      <aside className="w-72 bg-[#f3efe9] text-[#433422] p-6 hidden md:flex flex-col border-r border-[#eaddcf]">
-        <div className="flex items-center gap-3 mb-10 px-2">
-            <div className="bg-[#c48b5e] p-2 rounded-xl text-white shadow-md shadow-[#c48b5e]/20"><GraduationCap size={24} /></div>
-            <h1 className="text-xl font-extrabold tracking-tight uppercase text-[#433422]">Escola <span className="text-[#c48b5e]">Olavo Bilac</span></h1>
+      <aside className={`bg-[#f3efe9] text-[#433422] p-4 hidden md:flex flex-col border-r border-[#eaddcf] transition-all duration-300 ${isSidebarOpen ? 'w-72' : 'w-20'}`}>
+        <div className="flex items-center justify-between mb-8 px-1">
+            <div className={`flex items-center gap-3 ${!isSidebarOpen && 'justify-center w-full'}`}>
+                <div className="bg-[#c48b5e] p-2 rounded-xl text-white shadow-md shadow-[#c48b5e]/20 shrink-0"><GraduationCap size={24} /></div>
+                {isSidebarOpen && (
+                  <h1 className="text-xl font-extrabold tracking-tight uppercase text-[#433422] whitespace-nowrap overflow-hidden">
+                    Escola <span className="text-[#c48b5e]">Bilac</span>
+                  </h1>
+                )}
+            </div>
+            {isSidebarOpen && (
+              <button onClick={() => setIsSidebarOpen(false)} className="text-[#8c7e72] hover:text-[#c48b5e] p-1 rounded-lg hover:bg-[#eaddcf]/50">
+                <ChevronLeft size={20} />
+              </button>
+            )}
         </div>
         
+        {!isSidebarOpen && (
+          <div className="flex justify-center mb-6">
+            <button onClick={() => setIsSidebarOpen(true)} className="text-[#8c7e72] hover:text-[#c48b5e] p-2 rounded-lg hover:bg-[#eaddcf]/50">
+              <ChevronRight size={20} />
+            </button>
+          </div>
+        )}
+        
         <nav className="flex-1 space-y-2">
-          <NavItem icon={<LayoutDashboard size={20} />} label="Dashboard" active={currentPage === 'dashboard'} onClick={() => setCurrentPage('dashboard')} />
-          <NavItem icon={<School size={20} />} label="Turmas" active={currentPage === 'classes'} onClick={() => setCurrentPage('classes')} />
-          <NavItem icon={<Users size={20} />} label="Alunos" active={currentPage === 'students'} onClick={() => setCurrentPage('students')} />
-          <NavItem icon={<ClipboardCheck size={20} />} label="Avaliações" active={currentPage === 'assessments'} onClick={() => setCurrentPage('assessments')} />
-          <NavItem icon={<AlertTriangle size={20} />} label="Reforço Escolar" active={currentPage === 'remediation'} onClick={() => setCurrentPage('remediation')} />
-          <NavItem icon={<BookOpen size={20} />} label="BNCC" active={currentPage === 'skills'} onClick={() => setCurrentPage('skills')} />
-          {currentUser?.role === 'admin' && <NavItem icon={<UserIcon size={20} />} label="Equipe" active={currentPage === 'users'} onClick={() => setCurrentPage('users')} />}
+          <NavItem icon={<LayoutDashboard size={20} />} label="Dashboard" active={currentPage === 'dashboard'} collapsed={!isSidebarOpen} onClick={() => setCurrentPage('dashboard')} />
+          <NavItem icon={<School size={20} />} label="Turmas" active={currentPage === 'classes'} collapsed={!isSidebarOpen} onClick={() => setCurrentPage('classes')} />
+          <NavItem icon={<Users size={20} />} label="Alunos" active={currentPage === 'students'} collapsed={!isSidebarOpen} onClick={() => setCurrentPage('students')} />
+          <NavItem icon={<ClipboardCheck size={20} />} label="Avaliações" active={currentPage === 'assessments'} collapsed={!isSidebarOpen} onClick={() => setCurrentPage('assessments')} />
+          <NavItem icon={<AlertTriangle size={20} />} label="Reforço" active={currentPage === 'remediation'} collapsed={!isSidebarOpen} onClick={() => setCurrentPage('remediation')} />
+          <NavItem icon={<BookOpen size={20} />} label="BNCC" active={currentPage === 'skills'} collapsed={!isSidebarOpen} onClick={() => setCurrentPage('skills')} />
+          {currentUser?.role === 'admin' && <NavItem icon={<UserIcon size={20} />} label="Equipe" active={currentPage === 'users'} collapsed={!isSidebarOpen} onClick={() => setCurrentPage('users')} />}
         </nav>
 
         <div className="mt-auto pt-6 border-t border-[#eaddcf]">
-            <div className="px-2 mb-4">
-                <p className="text-xs text-[#8c7e72] font-bold uppercase tracking-widest">{currentUser?.name}</p>
-                <p className="text-[10px] text-[#c48b5e] font-medium uppercase">{currentUser?.role}</p>
-            </div>
-            <button onClick={handleLogout} className="w-full flex items-center gap-2 text-[#8c7e72] hover:text-[#c48b5e] p-2 transition-colors text-sm font-bold">
-              <LogOut size={16} /> Encerrar Sessão
+            {/* Connection Status Indicator */}
+            {isSidebarOpen ? (
+              <div className={`flex items-center justify-between mb-4 px-2 py-1.5 rounded-lg text-xs font-bold border ${apiStatus ? 'bg-green-100 text-green-700 border-green-200' : 'bg-red-100 text-red-700 border-red-200'}`}>
+                 <span className="flex items-center gap-1.5">
+                    {apiStatus ? <Wifi size={12}/> : <WifiOff size={12}/>}
+                    Sistema Online
+                 </span>
+                 <span className="w-2 h-2 rounded-full bg-current animate-pulse"></span>
+              </div>
+            ) : (
+               <div className={`flex justify-center mb-4`}>
+                  <div className={`w-3 h-3 rounded-full ${apiStatus ? 'bg-green-500' : 'bg-red-500'} animate-pulse`} title={apiStatus ? "Online" : "Offline"}></div>
+               </div>
+            )}
+
+            {isSidebarOpen ? (
+              <div className="px-2 mb-4">
+                  <p className="text-xs text-[#8c7e72] font-bold uppercase tracking-widest truncate">{currentUser?.name}</p>
+                  <p className="text-[10px] text-[#c48b5e] font-medium uppercase truncate">{currentUser?.role}</p>
+              </div>
+            ) : (
+               <div className="mb-4 flex justify-center">
+                  <div className="w-8 h-8 rounded-full bg-[#eaddcf] flex items-center justify-center text-[#c48b5e] font-bold text-xs">
+                    {currentUser?.name.charAt(0)}
+                  </div>
+               </div>
+            )}
+            
+            <button 
+              onClick={handleLogout} 
+              className={`w-full flex items-center ${isSidebarOpen ? 'gap-2 px-2' : 'justify-center'} text-[#8c7e72] hover:text-[#c48b5e] p-2 transition-colors text-sm font-bold`}
+              title="Encerrar Sessão"
+            >
+              <LogOut size={isSidebarOpen ? 16 : 20} /> {isSidebarOpen && 'Sair'}
             </button>
         </div>
       </aside>
 
-      <main className="flex-1 overflow-auto p-4 md:p-10">
+      <main className="flex-1 overflow-auto p-4 md:p-10 transition-all">
         {currentPage === 'dashboard' && <Dashboard classes={classes} students={students} assessments={assessments} skills={skills} currentUser={currentUser} onNavigateToRemediation={() => setCurrentPage('remediation')} />}
         
         {currentPage === 'classes' && <ClassList 
@@ -578,11 +434,11 @@ export default function App() {
           onAddClass={handleAddClass} 
           onUpdateClass={handleUpdateClass} 
           onDeleteClass={handleDeleteClass}
-          onToggleStatus={handleToggleClassStatus} // Passando função de toggle
+          onToggleStatus={handleToggleClassStatus} 
           onAddStudent={handleAddStudent} 
           onUpdateStudent={handleUpdateStudent} 
           onDeleteStudent={handleDeleteStudent}
-          onToggleStudentStatus={handleToggleStudentStatus} // Passando função de toggle
+          onToggleStudentStatus={handleToggleStudentStatus} 
           onAddLog={handleAddLog}
           onDeleteLog={handleDeleteLog}
         />}
@@ -594,7 +450,7 @@ export default function App() {
           onAddStudent={handleAddStudent} 
           onUpdateStudent={handleUpdateStudent} 
           onDeleteStudent={handleDeleteStudent} 
-          onToggleStatus={handleToggleStudentStatus} // Passando função de toggle
+          onToggleStatus={handleToggleStudentStatus}
           onSelectStudent={(id) => { setSelectedStudentId(id); setCurrentPage('student-detail'); }} 
         />}
         
@@ -626,7 +482,7 @@ export default function App() {
             skills={skills} 
             assessments={assessments} 
             classes={classes} 
-            logs={logs} // Passed logs to enable attendance check
+            logs={logs} 
             onAddAssessment={handleAddAssessment} 
             onBack={() => setCurrentPage('students')} 
         />}
@@ -636,8 +492,13 @@ export default function App() {
   );
 }
 
-const NavItem = ({ icon, label, active, onClick }: any) => (
-  <button onClick={onClick} className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-200 ${active ? 'bg-white text-[#c48b5e] shadow-sm border border-[#eaddcf] font-bold' : 'text-[#8c7e72] hover:text-[#433422] hover:bg-[#eaddcf]/50 font-medium'}`}>
-    {icon} <span className="text-sm">{label}</span>
+const NavItem = ({ icon, label, active, collapsed, onClick }: any) => (
+  <button 
+    onClick={onClick} 
+    className={`w-full flex items-center ${collapsed ? 'justify-center px-2' : 'gap-4 px-4'} py-3.5 rounded-2xl transition-all duration-200 ${active ? 'bg-white text-[#c48b5e] shadow-sm border border-[#eaddcf] font-bold' : 'text-[#8c7e72] hover:text-[#433422] hover:bg-[#eaddcf]/50 font-medium'}`}
+    title={collapsed ? label : undefined}
+  >
+    {icon} 
+    {!collapsed && <span className="text-sm whitespace-nowrap">{label}</span>}
   </button>
 );

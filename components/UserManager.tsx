@@ -115,12 +115,12 @@ export const UserManager: React.FC<UserManagerProps> = ({
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-           <h2 className="text-3xl font-bold text-[#000039]">Equipe Escolar</h2>
-           <p className="text-gray-500">Gerenciamento de acesso e permissões (Professores e Coordenadores)</p>
+           <h2 className="text-3xl font-bold text-[#433422]">Equipe Escolar</h2>
+           <p className="text-[#8c7e72]">Gerenciamento de acesso e permissões (Professores e Coordenadores)</p>
         </div>
         <button 
           onClick={() => { resetForm(); setIsFormOpen(true); }}
-          className="bg-[#10898b] hover:bg-[#0d7274] text-white px-6 py-2.5 rounded-xl flex items-center gap-2 shadow-lg shadow-[#10898b]/20 transition-all transform hover:-translate-y-0.5 font-medium"
+          className="bg-[#c48b5e] hover:bg-[#a0704a] text-white px-6 py-2.5 rounded-xl flex items-center gap-2 shadow-lg shadow-[#c48b5e]/20 transition-all transform hover:-translate-y-0.5 font-medium"
         >
           <Plus size={18} /> Novo Usuário
         </button>
@@ -128,10 +128,10 @@ export const UserManager: React.FC<UserManagerProps> = ({
 
       {isFormOpen && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden animate-in fade-in zoom-in duration-200 border border-[#bfe4cd]">
-             <div className="px-6 py-5 bg-gradient-to-r from-[#10898b] to-[#0d7274] flex justify-between items-center">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden animate-in fade-in zoom-in duration-200 border border-[#eaddcf]">
+             <div className="px-6 py-5 bg-gradient-to-r from-[#c48b5e] to-[#a0704a] flex justify-between items-center">
                 <h3 className="font-bold text-xl text-white flex items-center gap-2">
-                  {editingId ? <Edit2 size={20} className="text-[#bfe4cd]" /> : <Plus size={20} className="text-[#bfe4cd]" />}
+                  {editingId ? <Edit2 size={20} className="text-[#eaddcf]" /> : <Plus size={20} className="text-[#eaddcf]" />}
                   {editingId ? 'Editar Usuário' : 'Cadastrar Usuário'}
                 </h3>
                 <button onClick={resetForm} className="text-white/80 hover:text-white transition-colors">
@@ -141,30 +141,30 @@ export const UserManager: React.FC<UserManagerProps> = ({
              
              <form onSubmit={handleSubmit} className="p-8 space-y-5">
                 <div>
-                  <label className="block text-sm font-semibold text-[#10898b] mb-1.5">Nome Completo</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Nome Completo</label>
                   <input 
                     required
                     value={formData.name}
                     onChange={e => setFormData({...formData, name: e.target.value})}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#10898b] focus:border-transparent transition-all text-[#000039] bg-gray-50 focus:bg-white"
+                    className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-gray-900 bg-white"
                     placeholder="Ex: Maria Silva"
                   />
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-semibold text-[#10898b] mb-1.5">E-mail de Acesso</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">E-mail de Acesso</label>
                   <input 
                     required
                     type="email"
                     value={formData.email}
                     onChange={e => setFormData({...formData, email: e.target.value})}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#10898b] focus:border-transparent transition-all text-[#000039] bg-gray-50 focus:bg-white"
+                    className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-gray-900 bg-white"
                     placeholder="professor@escola.com"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-[#10898b] mb-1.5">
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">
                     {editingId ? 'Nova Senha' : 'Senha'}
                   </label>
                   <div className="relative">
@@ -173,13 +173,13 @@ export const UserManager: React.FC<UserManagerProps> = ({
                       type={showPassword ? "text" : "password"}
                       value={formData.password}
                       onChange={e => setFormData({...formData, password: e.target.value})}
-                      className="w-full border border-gray-200 rounded-xl pl-10 pr-10 py-3 outline-none focus:ring-2 focus:ring-[#10898b] focus:border-transparent transition-all text-[#000039] bg-gray-50 focus:bg-white"
+                      className="w-full border border-gray-300 rounded-xl pl-10 pr-10 py-3 outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-gray-900 bg-white"
                       placeholder={editingId ? "Deixe em branco para manter a atual" : "Mínimo 6 caracteres"}
                     />
                     <button 
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-3.5 text-gray-400 hover:text-[#10898b] focus:outline-none"
+                      className="absolute right-3 top-3.5 text-gray-400 hover:text-blue-500 focus:outline-none"
                     >
                       {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
@@ -188,11 +188,11 @@ export const UserManager: React.FC<UserManagerProps> = ({
 
                 <div className="grid grid-cols-2 gap-4">
                     <div>
-                       <label className="block text-sm font-semibold text-[#10898b] mb-1.5">Função / Cargo</label>
+                       <label className="block text-sm font-semibold text-gray-700 mb-1.5">Função / Cargo</label>
                        <select 
                           value={formData.role}
                           onChange={e => setFormData({...formData, role: e.target.value as UserRole})}
-                          className="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#10898b] focus:border-transparent bg-gray-50 focus:bg-white text-[#000039] transition-all"
+                          className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900 transition-all"
                        >
                           <option value="professor">Professor(a)</option>
                           <option value="coordenador">Coordenador(a)</option>
@@ -200,11 +200,11 @@ export const UserManager: React.FC<UserManagerProps> = ({
                        </select>
                     </div>
                     <div>
-                       <label className="block text-sm font-semibold text-[#10898b] mb-1.5">Status da Conta</label>
+                       <label className="block text-sm font-semibold text-gray-700 mb-1.5">Status da Conta</label>
                        <select 
                           value={formData.status}
                           onChange={e => setFormData({...formData, status: e.target.value as any})}
-                          className="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#10898b] focus:border-transparent bg-gray-50 focus:bg-white text-[#000039] transition-all"
+                          className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900 transition-all"
                        >
                           <option value="active">Ativo</option>
                           <option value="inactive">Inativo (Bloqueado)</option>
@@ -222,7 +222,7 @@ export const UserManager: React.FC<UserManagerProps> = ({
                    </button>
                    <button 
                      type="submit" 
-                     className="flex-1 bg-[#10898b] text-white py-3.5 rounded-xl font-bold hover:bg-[#0d7274] shadow-lg shadow-[#10898b]/20 transition-all transform hover:-translate-y-0.5"
+                     className="flex-1 bg-[#c48b5e] text-white py-3.5 rounded-xl font-bold hover:bg-[#a0704a] shadow-lg shadow-[#c48b5e]/20 transition-all transform hover:-translate-y-0.5"
                    >
                      {editingId ? 'Salvar Alterações' : 'Criar Usuário'}
                    </button>
@@ -239,7 +239,7 @@ export const UserManager: React.FC<UserManagerProps> = ({
           placeholder="Buscar por nome ou e-mail..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#10898b] outline-none shadow-sm transition-all text-black placeholder-gray-500"
+          className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#c48b5e] outline-none shadow-sm transition-all text-black placeholder-gray-500"
         />
       </div>
 
@@ -255,10 +255,10 @@ export const UserManager: React.FC<UserManagerProps> = ({
           </thead>
           <tbody className="divide-y divide-gray-100">
             {filteredUsers.map(user => (
-              <tr key={user.id} className="hover:bg-[#bfe4cd]/20 transition-colors">
+              <tr key={user.id} className="hover:bg-[#eaddcf]/20 transition-colors">
                 <td className="p-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-[#bfe4cd] flex items-center justify-center text-[#10898b] relative">
+                    <div className="w-10 h-10 rounded-full bg-[#fcf9f6] border border-[#eaddcf] flex items-center justify-center text-[#c48b5e] relative">
                       <UserIcon size={20} />
                       {user.status === 'inactive' && (
                          <div className="absolute -bottom-1 -right-1 bg-red-500 text-white rounded-full p-0.5 border border-white">
@@ -267,7 +267,7 @@ export const UserManager: React.FC<UserManagerProps> = ({
                       )}
                     </div>
                     <div>
-                      <p className={`font-medium ${user.status === 'inactive' ? 'text-gray-400 line-through' : 'text-[#000039]'}`}>{user.name}</p>
+                      <p className={`font-medium ${user.status === 'inactive' ? 'text-gray-400 line-through' : 'text-[#433422]'}`}>{user.name}</p>
                       <p className="text-xs text-gray-500">{user.email}</p>
                     </div>
                   </div>
@@ -296,7 +296,7 @@ export const UserManager: React.FC<UserManagerProps> = ({
                    <div className="flex items-center justify-end gap-2">
                      <button 
                        onClick={() => handleEditClick(user)}
-                       className="p-2 text-gray-400 hover:text-[#10898b] hover:bg-[#bfe4cd] rounded-lg transition-colors"
+                       className="p-2 text-gray-400 hover:text-[#c48b5e] hover:bg-[#eaddcf] rounded-lg transition-colors"
                        title="Editar"
                      >
                        <Edit2 size={18} />

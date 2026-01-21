@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronRight, Users, GraduationCap, Plus, Camera, Calendar, Phone, User as UserIcon, Edit2, Trash2, ArrowLeft, X, Target, BookOpen, Save, CheckSquare, Square, Clock, Archive, RefreshCcw, Check, School, Search, Filter } from 'lucide-react';
+import { ChevronRight, Users, GraduationCap, Plus, Camera, Calendar, Phone, User as UserIcon, Edit2, Trash2, ArrowLeft, X, Target, BookOpen, Save, CheckSquare, Square, Clock, Archive, RefreshCcw, Check, School, Search, Filter, ChevronDown, ChevronUp, Hash, ExternalLink, UserCheck, Upload, AlertTriangle } from 'lucide-react';
 import { ClassGroup, Student, User, ClassDailyLog } from '../types';
 
 interface ClassListProps {
@@ -47,7 +47,7 @@ export const ClassList: React.FC<ClassListProps> = ({
   const [isClassModalOpen, setIsClassModalOpen] = useState(false);
   const [isStudentModalOpen, setIsStudentModalOpen] = useState(false);
   const [editingClassId, setEditingClassId] = useState<string | null>(null);
-
+  
   // Filters
   const [searchTerm, setSearchTerm] = useState('');
   const [filterShift, setFilterShift] = useState('all');
@@ -60,7 +60,7 @@ export const ClassList: React.FC<ClassListProps> = ({
     grade: '',
     year: new Date().getFullYear(),
     shift: 'Matutino',
-    teacherIds: [], // Array instead of single string
+    teacherIds: [], 
     status: 'active'
   });
 
@@ -154,7 +154,6 @@ export const ClassList: React.FC<ClassListProps> = ({
     return `id-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   };
 
-  // Helper to toggle teacher selection in form
   const toggleTeacherSelection = (teacherId: string) => {
       setClassFormData(prev => {
           const currentIds = prev.teacherIds || [];
@@ -192,6 +191,18 @@ export const ClassList: React.FC<ClassListProps> = ({
     setEditingClassId(null);
   };
 
+  // Helper para upload de foto
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setStudentFormData(prev => ({ ...prev, avatarUrl: reader.result as string }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleCreateStudent = (e: React.FormEvent) => {
     e.preventDefault();
     if (!activeClass || !studentFormData.name) return;
@@ -212,7 +223,6 @@ export const ClassList: React.FC<ClassListProps> = ({
     setStudentFormData({ name: '', avatarUrl: '', registrationNumber: '', birthDate: '', parentName: '', phone: '', status: 'active' });
   };
 
-  // DIARY LOGIC
   const handleToggleAttendance = (studentId: string) => {
       setAttendance(prev => ({
           ...prev,
@@ -287,7 +297,6 @@ export const ClassList: React.FC<ClassListProps> = ({
                    <span className="flex items-center gap-1"><Calendar size={14}/> {activeClass.year}</span>
                    <span className="flex items-center gap-1"><Clock size={14}/> {activeClass.shift}</span>
                 </div>
-                {/* Lista de Professores */}
                 <div className="mt-2 text-xs flex items-center gap-1 text-[#8c7e72]">
                    <UserIcon size={12} /> 
                    <span className="font-semibold">Professores:</span>
@@ -318,64 +327,102 @@ export const ClassList: React.FC<ClassListProps> = ({
         </div>
 
         {activeTab === 'students' ? (
-             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {/* ALUNOS ATIVOS */}
-                {activeStudents.map(student => (
-                    <div 
-                        key={student.id} 
-                        onClick={() => onSelectStudent(student.id)}
-                        className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:border-[#c48b5e] hover:shadow-md transition-all cursor-pointer group flex items-center justify-between"
-                    >
-                        <div className="flex items-center gap-3">
-                            {student.avatarUrl ? (
-                                <img src={student.avatarUrl} alt={student.name} className="w-12 h-12 rounded-full object-cover border border-gray-100" />
-                            ) : (
-                                <div className="w-12 h-12 rounded-full bg-[#fcf9f6] text-[#c48b5e] flex items-center justify-center font-bold text-lg border border-[#eaddcf]">
-                                    {student.name.charAt(0)}
+             <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {/* ALUNOS ATIVOS - CARD COMPLETO SEMPRE VISÍVEL */}
+                    {activeStudents.map(student => {
+                        return (
+                            <div key={student.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex flex-col gap-4 hover:border-[#c48b5e] hover:shadow-md transition-all">
+                                
+                                {/* Header: Avatar + Nome + Status */}
+                                <div className="flex items-start gap-4">
+                                    {student.avatarUrl ? (
+                                        <img src={student.avatarUrl} alt={student.name} className="w-16 h-16 rounded-full object-cover border-2 border-white shadow-sm" />
+                                    ) : (
+                                        <div className="w-16 h-16 rounded-full bg-[#fcf9f6] text-[#c48b5e] flex items-center justify-center font-bold text-2xl border border-[#eaddcf]">
+                                            {student.name.charAt(0)}
+                                        </div>
+                                    )}
+                                    <div className="flex-1">
+                                        <h3 className="font-bold text-lg text-[#433422] leading-tight mb-1 line-clamp-2">{student.name}</h3>
+                                        <div className="flex flex-wrap gap-2 text-xs">
+                                            {student.remediationEntryDate && !student.remediationExitDate && (
+                                                <span className="bg-red-50 text-red-700 px-2 py-0.5 rounded border border-red-100 font-medium flex items-center gap-1">
+                                                    <AlertTriangle size={10} /> Reforço
+                                                </span>
+                                            )}
+                                            <span className="bg-green-50 text-green-700 px-2 py-0.5 rounded border border-green-100 font-medium">Ativo</span>
+                                        </div>
+                                    </div>
                                 </div>
-                            )}
-                            <div>
-                                <h3 className="font-bold text-[#433422]">{student.name}</h3>
-                                <p className="text-xs text-gray-500">Mat: {student.registrationNumber || '-'}</p>
-                            </div>
-                        </div>
-                        <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                             <button 
-                                onClick={(e) => handleToggleStudentClick(e, student)}
-                                className="p-2 text-gray-400 hover:text-orange-500 hover:bg-orange-50 rounded-lg"
-                                title="Arquivar Aluno"
-                             >
-                                <Archive size={16} />
-                             </button>
-                             <ChevronRight className="text-[#c48b5e]" size={20} />
-                        </div>
-                    </div>
-                ))}
 
-                {/* ALUNOS INATIVOS (Visualmente diferentes) */}
+                                {/* Body: Informações Detalhadas (Sempre Visíveis) */}
+                                <div className="grid grid-cols-2 gap-3 pt-2 border-t border-gray-50">
+                                    <div className="col-span-2 sm:col-span-1">
+                                        <p className="text-[10px] uppercase font-bold text-[#8c7e72] tracking-wider mb-0.5 flex items-center gap-1">
+                                            <Hash size={10} /> Matrícula
+                                        </p>
+                                        <p className="text-sm font-semibold text-gray-700">{student.registrationNumber || '-'}</p>
+                                    </div>
+                                    <div className="col-span-2 sm:col-span-1">
+                                        <p className="text-[10px] uppercase font-bold text-[#8c7e72] tracking-wider mb-0.5 flex items-center gap-1">
+                                            <Phone size={10} /> Contato
+                                        </p>
+                                        <p className="text-sm font-semibold text-gray-700">{student.phone || '-'}</p>
+                                    </div>
+                                    <div className="col-span-2">
+                                        <p className="text-[10px] uppercase font-bold text-[#8c7e72] tracking-wider mb-0.5 flex items-center gap-1">
+                                            <UserCheck size={10} /> Responsável
+                                        </p>
+                                        <p className="text-sm font-semibold text-gray-700 truncate" title={student.parentName}>{student.parentName || '-'}</p>
+                                    </div>
+                                </div>
+
+                                {/* Footer: Ações */}
+                                <div className="flex gap-2 mt-auto pt-2">
+                                    <button 
+                                        onClick={() => onSelectStudent(student.id)}
+                                        className="flex-1 bg-[#c48b5e] text-white py-2 rounded-lg text-sm font-bold hover:bg-[#a0704a] transition-colors shadow-sm flex items-center justify-center gap-2"
+                                    >
+                                        <ExternalLink size={14} /> Ver Perfil
+                                    </button>
+                                    <button 
+                                        onClick={(e) => handleToggleStudentClick(e, student)}
+                                        className="px-3 bg-gray-50 text-gray-400 border border-gray-200 rounded-lg hover:bg-orange-50 hover:text-orange-600 hover:border-orange-200 transition-colors"
+                                        title="Arquivar"
+                                    >
+                                        <Archive size={16} />
+                                    </button>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+
+                {/* ALUNOS INATIVOS (Visualmente diferentes e mais visíveis agora) */}
                 {inactiveStudents.length > 0 && (
-                    <div className="col-span-full mt-6">
-                        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-                           <Archive size={14} /> Alunos Arquivados
+                    <div className="mt-10 border-t border-gray-200 pt-8">
+                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                           <Archive size={14} /> Arquivados ({inactiveStudents.length})
                         </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             {inactiveStudents.map(student => (
                                 <div 
                                     key={student.id} 
-                                    className="bg-gray-50 p-4 rounded-xl border border-gray-200 opacity-75 hover:opacity-100 transition-all flex items-center justify-between"
+                                    className="bg-gray-50 p-4 rounded-xl border border-gray-200 hover:bg-white hover:border-[#eaddcf] transition-all flex items-center justify-between group shadow-sm"
                                 >
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-full bg-gray-200 text-gray-400 flex items-center justify-center font-bold text-lg">
+                                        <div className="w-10 h-10 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center font-bold text-lg border border-gray-300">
                                             {student.name.charAt(0)}
                                         </div>
                                         <div>
-                                            <h3 className="font-bold text-gray-500 line-through">{student.name}</h3>
-                                            <p className="text-xs text-gray-400">Inativo</p>
+                                            <h3 className="font-bold text-gray-600 line-through decoration-gray-400">{student.name}</h3>
+                                            <p className="text-[10px] text-gray-500 uppercase font-bold bg-gray-200 px-1.5 py-0.5 rounded w-fit mt-0.5">Inativo</p>
                                         </div>
                                     </div>
                                     <button 
                                         onClick={(e) => handleToggleStudentClick(e, student)}
-                                        className="p-2 text-green-500 hover:text-green-700 hover:bg-green-50 rounded-lg transition-colors"
+                                        className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors border border-transparent hover:border-green-100"
                                         title="Reativar Aluno"
                                     >
                                         <RefreshCcw size={16} />
@@ -387,10 +434,12 @@ export const ClassList: React.FC<ClassListProps> = ({
                 )}
 
                 {activeStudents.length === 0 && inactiveStudents.length === 0 && (
-                    <div className="col-span-full py-12 text-center text-gray-400 bg-white rounded-xl border-2 border-dashed border-gray-200">
-                        <Users className="mx-auto mb-2 opacity-50" size={32} />
-                        <p>Nenhum aluno cadastrado nesta turma.</p>
-                        <button onClick={() => setIsStudentModalOpen(true)} className="text-[#c48b5e] font-bold hover:underline mt-2">
+                    <div className="py-16 text-center text-gray-400 bg-white rounded-xl border-2 border-dashed border-gray-200 flex flex-col items-center">
+                        <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
+                            <Users className="text-gray-300" size={32} />
+                        </div>
+                        <p className="font-medium text-gray-500">Nenhum aluno cadastrado nesta turma.</p>
+                        <button onClick={() => setIsStudentModalOpen(true)} className="text-[#c48b5e] font-bold hover:underline mt-2 text-sm">
                             Cadastrar Primeiro Aluno
                         </button>
                     </div>
@@ -405,27 +454,27 @@ export const ClassList: React.FC<ClassListProps> = ({
                      </h3>
                      <form onSubmit={handleSaveLog} className="space-y-4">
                          <div>
-                             <label className="block text-sm font-semibold text-[#c48b5e] mb-1">Data</label>
+                             <label className="block text-sm font-semibold text-gray-700 mb-1">Data</label>
                              <input 
                                 type="date"
                                 required 
                                 value={newLogDate}
                                 onChange={e => setNewLogDate(e.target.value)}
-                                className="w-full border border-gray-200 rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-[#c48b5e]"
+                                className="w-full border border-gray-300 rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                              />
                          </div>
                          <div>
-                             <label className="block text-sm font-semibold text-[#c48b5e] mb-1">Conteúdo</label>
+                             <label className="block text-sm font-semibold text-gray-700 mb-1">Conteúdo</label>
                              <textarea 
                                 required
                                 value={newLogContent}
                                 onChange={e => setNewLogContent(e.target.value)}
-                                className="w-full border border-gray-200 rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-[#c48b5e] h-32 resize-none"
+                                className="w-full border border-gray-300 rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500 bg-white h-32 resize-none"
                                 placeholder="O que foi ensinado hoje?"
                              />
                          </div>
                          <div>
-                             <label className="block text-sm font-semibold text-[#c48b5e] mb-2">Chamada</label>
+                             <label className="block text-sm font-semibold text-gray-700 mb-2">Chamada</label>
                              <div className="max-h-60 overflow-y-auto border border-gray-200 rounded-xl p-2 space-y-1">
                                  {activeStudents.map(s => (
                                      <div 
@@ -479,46 +528,91 @@ export const ClassList: React.FC<ClassListProps> = ({
              </div>
         )}
 
-        {/* Modal Novo Aluno */}
+        {/* Modal Novo Aluno (CADASTRO COMPLETO) */}
         {isStudentModalOpen && (
           <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-             <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-in fade-in zoom-in duration-200">
-                <div className="px-6 py-4 bg-[#c48b5e] flex justify-between items-center">
-                   <h3 className="font-bold text-white">Novo Aluno</h3>
+             <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden animate-in fade-in zoom-in duration-200">
+                <div className="px-6 py-5 bg-[#c48b5e] flex justify-between items-center">
+                   <h3 className="font-bold text-white text-lg flex items-center gap-2"><UserIcon size={20} className="text-white/80" /> Novo Cadastro de Aluno</h3>
                    <button onClick={() => setIsStudentModalOpen(false)} className="text-white/80 hover:text-white"><X size={24}/></button>
                 </div>
-                <form onSubmit={handleCreateStudent} className="p-6 space-y-4">
+                <form onSubmit={handleCreateStudent} className="p-8 space-y-6 max-h-[80vh] overflow-y-auto">
+                   
+                   {/* Avatar Upload */}
+                   <div className="flex flex-col items-center gap-3 mb-2">
+                        <div className="w-24 h-24 bg-[#fcf9f6] rounded-full flex items-center justify-center border-2 border-dashed border-[#c48b5e]/30 overflow-hidden relative group">
+                           {studentFormData.avatarUrl ? (
+                               <img src={studentFormData.avatarUrl} className="w-full h-full object-cover" />
+                           ) : (
+                               <Camera className="text-[#c48b5e] w-8 h-8" />
+                           )}
+                           <label className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity">
+                               <Upload className="text-white" size={20} />
+                               <input type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
+                           </label>
+                        </div>
+                        <div className="w-full text-center">
+                           <label className="text-xs text-[#c48b5e] font-bold cursor-pointer hover:underline">
+                               Adicionar Foto
+                               <input type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
+                           </label>
+                        </div>
+                   </div>
+
                    <div>
-                       <label className="block text-sm font-bold text-[#c48b5e] mb-1">Nome Completo</label>
+                       <label className="block text-sm font-bold text-gray-700 mb-1">Nome Completo</label>
                        <input 
                           required 
-                          className="w-full border border-gray-200 rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-[#c48b5e]"
+                          className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                           value={studentFormData.name}
                           onChange={e => setStudentFormData({...studentFormData, name: e.target.value})}
                           placeholder="Ex: João da Silva"
                        />
                    </div>
+                   
                    <div className="grid grid-cols-2 gap-4">
                        <div>
-                           <label className="block text-sm font-bold text-[#c48b5e] mb-1">Matrícula</label>
+                           <label className="block text-sm font-bold text-gray-700 mb-1">Matrícula</label>
                            <input 
-                              className="w-full border border-gray-200 rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-[#c48b5e]"
+                              className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                               value={studentFormData.registrationNumber}
                               onChange={e => setStudentFormData({...studentFormData, registrationNumber: e.target.value})}
                            />
                        </div>
                        <div>
-                           <label className="block text-sm font-bold text-[#c48b5e] mb-1">Nascimento</label>
+                           <label className="block text-sm font-bold text-gray-700 mb-1">Nascimento</label>
                            <input 
                               type="date"
-                              className="w-full border border-gray-200 rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-[#c48b5e]"
+                              className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                               value={studentFormData.birthDate}
                               onChange={e => setStudentFormData({...studentFormData, birthDate: e.target.value})}
                            />
                        </div>
                    </div>
-                   <button type="submit" className="w-full bg-[#c48b5e] text-white py-3 rounded-xl font-bold hover:bg-[#a0704a] shadow-md mt-2">
-                       Cadastrar
+
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 mb-1">Responsável</label>
+                            <input 
+                                className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                                value={studentFormData.parentName}
+                                onChange={e => setStudentFormData({...studentFormData, parentName: e.target.value})}
+                                placeholder="Nome do Pai/Mãe"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 mb-1">Telefone</label>
+                            <input 
+                                className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                                value={studentFormData.phone}
+                                onChange={e => setStudentFormData({...studentFormData, phone: e.target.value})}
+                                placeholder="(00) 00000-0000"
+                            />
+                        </div>
+                   </div>
+
+                   <button type="submit" className="w-full bg-[#c48b5e] text-white py-3.5 rounded-xl font-bold hover:bg-[#a0704a] shadow-md mt-4 transition-transform hover:-translate-y-0.5">
+                       Confirmar Cadastro
                    </button>
                 </form>
              </div>
@@ -696,10 +790,10 @@ export const ClassList: React.FC<ClassListProps> = ({
              
              <form onSubmit={handleCreateClass} className="p-6 space-y-4">
                 <div>
-                    <label className="block text-sm font-semibold text-[#c48b5e] mb-1.5">Nome da Turma</label>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">Nome da Turma</label>
                     <input 
                        required
-                       className="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#c48b5e] bg-[#fcf9f6] focus:bg-white text-[#433422]"
+                       className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
                        placeholder="Ex: 1º Ano A"
                        value={classFormData.name}
                        onChange={e => setClassFormData({...classFormData, name: e.target.value})}
@@ -708,21 +802,21 @@ export const ClassList: React.FC<ClassListProps> = ({
                 
                 <div className="grid grid-cols-2 gap-4">
                     <div>
-                        <label className="block text-sm font-semibold text-[#c48b5e] mb-1.5">Série / Grau</label>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1.5">Série / Grau</label>
                         <input 
                            required
-                           className="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#c48b5e] bg-[#fcf9f6] focus:bg-white text-[#433422]"
+                           className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
                            placeholder="Ex: Fundamental I"
                            value={classFormData.grade}
                            onChange={e => setClassFormData({...classFormData, grade: e.target.value})}
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-semibold text-[#c48b5e] mb-1.5">Ano Letivo</label>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1.5">Ano Letivo</label>
                         <input 
                            type="number"
                            required
-                           className="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#c48b5e] bg-[#fcf9f6] focus:bg-white text-[#433422]"
+                           className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
                            value={classFormData.year}
                            onChange={e => setClassFormData({...classFormData, year: Number(e.target.value)})}
                         />
@@ -730,9 +824,9 @@ export const ClassList: React.FC<ClassListProps> = ({
                 </div>
 
                 <div>
-                    <label className="block text-sm font-semibold text-[#c48b5e] mb-1.5">Turno</label>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">Turno</label>
                     <select 
-                       className="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#c48b5e] bg-[#fcf9f6] focus:bg-white text-[#433422]"
+                       className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
                        value={classFormData.shift}
                        onChange={e => setClassFormData({...classFormData, shift: e.target.value as any})}
                     >
@@ -745,18 +839,18 @@ export const ClassList: React.FC<ClassListProps> = ({
 
                 {/* Multi-Teacher Selection */}
                 <div>
-                   <label className="block text-sm font-semibold text-[#c48b5e] mb-1.5">Professores Responsáveis</label>
-                   <div className="border border-gray-200 rounded-xl p-3 max-h-40 overflow-y-auto bg-[#fcf9f6]">
+                   <label className="block text-sm font-semibold text-gray-700 mb-1.5">Professores Responsáveis</label>
+                   <div className="border border-gray-300 rounded-xl p-3 max-h-40 overflow-y-auto bg-white">
                       {users.filter(u => u.role !== 'admin').map(u => (
                         <div 
                            key={u.id} 
                            onClick={() => toggleTeacherSelection(u.id)} 
-                           className="flex items-center gap-3 p-2 hover:bg-white cursor-pointer rounded-lg transition-colors border border-transparent hover:border-gray-100"
+                           className="flex items-center gap-3 p-2 hover:bg-gray-50 cursor-pointer rounded-lg transition-colors border border-transparent hover:border-gray-100"
                         >
                            <div className={`w-5 h-5 border rounded flex items-center justify-center transition-colors ${classFormData.teacherIds?.includes(u.id) ? 'bg-[#c48b5e] border-[#c48b5e]' : 'border-gray-300 bg-white'}`}>
                               {classFormData.teacherIds?.includes(u.id) && <Check size={14} className="text-white" />}
                            </div>
-                           <span className="text-sm text-[#433422] font-medium">{u.name}</span>
+                           <span className="text-sm text-gray-900 font-medium">{u.name}</span>
                         </div>
                       ))}
                       {users.filter(u => u.role !== 'admin').length === 0 && (

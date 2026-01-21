@@ -322,10 +322,10 @@ export const AssessmentManager: React.FC<AssessmentManagerProps> = ({
                 {/* 1. Contexto Geral */}
                 <div className="grid grid-cols-2 gap-4">
                     <div>
-                        <label className="block text-sm font-semibold text-[#c48b5e] mb-1.5 ml-1">Turma</label>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1.5 ml-1">Turma</label>
                         <select
                             required
-                            className="w-full border border-gray-200 rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-[#c48b5e] bg-gray-50 text-[#000039]"
+                            className="w-full border border-gray-300 rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
                             value={formClassId}
                             onChange={e => { setFormClassId(e.target.value); setFormStudentId(''); }}
                         >
@@ -336,11 +336,11 @@ export const AssessmentManager: React.FC<AssessmentManagerProps> = ({
                         </select>
                     </div>
                     <div>
-                        <label className="block text-sm font-semibold text-[#c48b5e] mb-1.5 ml-1">Aluno</label>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1.5 ml-1">Aluno</label>
                         <select
                             required
                             disabled={!formClassId}
-                            className="w-full border border-gray-200 rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-[#c48b5e] bg-gray-50 text-[#000039] disabled:bg-gray-100"
+                            className="w-full border border-gray-300 rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white disabled:bg-gray-100"
                             value={formStudentId}
                             onChange={e => setFormStudentId(e.target.value)}
                         >
@@ -354,10 +354,10 @@ export const AssessmentManager: React.FC<AssessmentManagerProps> = ({
 
                 <div className="grid grid-cols-2 gap-4">
                     <div>
-                        <label className="block text-sm font-semibold text-[#c48b5e] mb-1.5 ml-1">Habilidade BNCC</label>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1.5 ml-1">Habilidade BNCC</label>
                         <select
                             required
-                            className="w-full border border-gray-200 rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-[#c48b5e] bg-gray-50 text-[#000039]"
+                            className="w-full border border-gray-300 rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
                             value={formSkillId}
                             onChange={e => setFormSkillId(e.target.value)}
                         >
@@ -368,10 +368,10 @@ export const AssessmentManager: React.FC<AssessmentManagerProps> = ({
                         </select>
                     </div>
                     <div>
-                        <label className="block text-sm font-semibold text-[#c48b5e] mb-1.5 ml-1">Trimestre</label>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1.5 ml-1">Trimestre</label>
                         <select
                             required
-                            className="w-full border border-gray-200 rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-[#c48b5e] bg-gray-50 text-[#000039]"
+                            className="w-full border border-gray-300 rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
                             value={formTerm}
                             onChange={e => setFormTerm(e.target.value)}
                         >
@@ -388,10 +388,10 @@ export const AssessmentManager: React.FC<AssessmentManagerProps> = ({
                     
                     {/* Habilidade Status */}
                     <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
-                        <label className="block text-xs font-bold text-[#c48b5e] uppercase tracking-wider mb-2">Habilidade BNCC (Resultado)</label>
+                        <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Habilidade BNCC (Resultado)</label>
                         <select
                             required
-                            className="w-full border border-gray-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-[#c48b5e] bg-white text-[#000039]"
+                            className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
                             value={formStatus}
                             onChange={e => setFormStatus(e.target.value as AssessmentStatus)}
                         >
@@ -453,9 +453,9 @@ export const AssessmentManager: React.FC<AssessmentManagerProps> = ({
                 </div>
 
                 <div>
-                    <label className="block text-sm font-semibold text-[#c48b5e] mb-1.5 ml-1">Observações (Opcional)</label>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1.5 ml-1">Observações (Opcional)</label>
                     <textarea 
-                        className="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#c48b5e] focus:border-transparent bg-gray-50 focus:bg-white text-[#000039] resize-none h-16 transition-all"
+                        className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900 resize-none h-16 transition-all"
                         value={formNotes}
                         onChange={e => setFormNotes(e.target.value)}
                         placeholder="Comentários sobre o desempenho..."

@@ -171,55 +171,55 @@ export const SkillManager: React.FC<SkillManagerProps> = ({
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-           <h2 className="text-3xl font-bold text-[#000039]">Habilidades BNCC</h2>
-           <p className="text-gray-500">Catálogo de competências curriculares</p>
+           <h2 className="text-3xl font-bold text-[#433422]">Habilidades BNCC</h2>
+           <p className="text-[#8c7e72]">Catálogo de competências curriculares</p>
         </div>
         <button 
           onClick={() => { resetForm(); setIsFormOpen(true); }}
-          className="bg-[#10898b] hover:bg-[#0d7274] text-white px-6 py-2.5 rounded-xl flex items-center gap-2 shadow-lg shadow-[#10898b]/20 transition-all transform hover:-translate-y-0.5 font-medium"
+          className="bg-[#c48b5e] hover:bg-[#a0704a] text-white px-6 py-2.5 rounded-xl flex items-center gap-2 shadow-lg shadow-[#c48b5e]/20 transition-all transform hover:-translate-y-0.5 font-medium"
         >
           <Plus size={18} /> Cadastrar Habilidade
         </button>
       </div>
 
       {isFormOpen && (
-        <div className="bg-white p-8 rounded-2xl shadow-lg border border-[#bfe4cd] animate-in slide-in-from-top-4 duration-300">
-           <div className="flex items-center gap-2 mb-6 text-[#10898b]">
+        <div className="bg-white p-8 rounded-2xl shadow-lg border border-[#eaddcf] animate-in slide-in-from-top-4 duration-300">
+           <div className="flex items-center gap-2 mb-6 text-[#c48b5e]">
               <BookOpen />
               <h3 className="font-bold text-xl">{editingId ? 'Editar Habilidade' : 'Nova Habilidade'}</h3>
            </div>
            
            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
               <div>
-                <label className="block text-sm font-bold text-[#10898b] mb-1.5">Código BNCC</label>
+                <label className="block text-sm font-bold text-gray-700 mb-1.5">Código BNCC</label>
                 <input 
                   required
                   value={formData.code}
                   onChange={e => setFormData({...formData, code: e.target.value})}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#10898b] outline-none text-[#000039] bg-gray-50 focus:bg-white transition-all"
+                  className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 bg-white transition-all"
                   placeholder="Ex: EF01LP01"
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-bold text-[#10898b] mb-1.5">Ano / Série</label>
+                <label className="block text-sm font-bold text-gray-700 mb-1.5">Ano / Série</label>
                 <input 
                   required
                   value={formData.year}
                   onChange={e => setFormData({...formData, year: e.target.value})}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#10898b] outline-none text-[#000039] bg-gray-50 focus:bg-white transition-all"
+                  className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 bg-white transition-all"
                   placeholder="Ex: 1º Ano"
                 />
               </div>
 
               <div className="md:col-span-2">
-                 <label className="block text-sm font-bold text-[#10898b] mb-1.5">Disciplina</label>
+                 <label className="block text-sm font-bold text-gray-700 mb-1.5">Disciplina</label>
                  <div className="flex gap-2">
                      <select 
                         required
                         value={formData.subject}
                         onChange={e => setFormData({...formData, subject: e.target.value})}
-                        className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#10898b] outline-none text-[#000039] bg-gray-50 focus:bg-white transition-all"
+                        className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 bg-white transition-all"
                      >
                         <option value="">Selecione...</option>
                         {subjects.map(sub => (
@@ -229,7 +229,7 @@ export const SkillManager: React.FC<SkillManagerProps> = ({
                      <button 
                         type="button" 
                         onClick={() => setIsSubjectModalOpen(true)}
-                        className="px-3 bg-[#10898b] text-white rounded-xl hover:bg-[#0d7274] transition-colors"
+                        className="px-3 bg-[#c48b5e] text-white rounded-xl hover:bg-[#a0704a] transition-colors"
                         title="Nova Disciplina"
                      >
                         <Plus size={20} />
@@ -238,19 +238,19 @@ export const SkillManager: React.FC<SkillManagerProps> = ({
               </div>
 
               <div className="md:col-span-4">
-                <label className="block text-sm font-bold text-[#10898b] mb-1.5">Descrição</label>
+                <label className="block text-sm font-bold text-gray-700 mb-1.5">Descrição</label>
                 <textarea 
                   required
                   value={formData.description}
                   onChange={e => setFormData({...formData, description: e.target.value})}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#10898b] outline-none text-[#000039] bg-gray-50 focus:bg-white transition-all resize-none h-24"
+                  className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 bg-white transition-all resize-none h-24"
                   placeholder="Descrição detalhada da habilidade..."
                 />
               </div>
 
               <div className="flex gap-3 md:col-span-4 justify-end mt-2">
                  <button type="button" onClick={resetForm} className="px-6 py-2.5 bg-white border border-gray-200 text-gray-600 rounded-xl font-medium hover:bg-gray-50 transition-colors">Cancelar</button>
-                 <button type="submit" className="px-8 py-2.5 bg-[#10898b] text-white rounded-xl font-bold hover:bg-[#0d7274] shadow-md shadow-[#10898b]/20 transition-all transform hover:-translate-y-0.5">Salvar</button>
+                 <button type="submit" className="px-8 py-2.5 bg-[#c48b5e] text-white rounded-xl font-bold hover:bg-[#a0704a] shadow-md shadow-[#c48b5e]/20 transition-all transform hover:-translate-y-0.5">Salvar</button>
               </div>
            </form>
         </div>
@@ -261,22 +261,22 @@ export const SkillManager: React.FC<SkillManagerProps> = ({
           <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
             <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in duration-200">
                 <div className="px-6 py-4 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
-                    <h3 className="font-bold text-[#000039]">Nova Disciplina</h3>
+                    <h3 className="font-bold text-[#433422]">Nova Disciplina</h3>
                     <button onClick={() => setIsSubjectModalOpen(false)} className="text-gray-400 hover:text-gray-600"><X size={20}/></button>
                 </div>
                 <form onSubmit={handleCreateSubject} className="p-6 space-y-4">
                     <div>
-                        <label className="block text-sm font-bold text-[#10898b] mb-1.5">Nome da Disciplina</label>
+                        <label className="block text-sm font-bold text-gray-700 mb-1.5">Nome da Disciplina</label>
                         <input 
                             autoFocus
                             required
                             value={newSubjectName}
                             onChange={e => setNewSubjectName(e.target.value)}
                             placeholder="Ex: Robótica"
-                            className="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#10898b] text-[#000039]"
+                            className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                         />
                     </div>
-                    <button type="submit" className="w-full bg-[#10898b] text-white py-3 rounded-xl font-bold hover:bg-[#0d7274]">
+                    <button type="submit" className="w-full bg-[#c48b5e] text-white py-3 rounded-xl font-bold hover:bg-[#a0704a]">
                         Criar
                     </button>
                 </form>
@@ -291,7 +291,7 @@ export const SkillManager: React.FC<SkillManagerProps> = ({
           placeholder="Buscar habilidade por código, ano ou descrição..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#10898b] outline-none shadow-sm text-black placeholder-gray-500"
+          className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#c48b5e] outline-none shadow-sm text-black placeholder-gray-500"
         />
       </div>
 
@@ -300,10 +300,10 @@ export const SkillManager: React.FC<SkillManagerProps> = ({
             const usageCount = classes.filter(c => c.focusSkills?.includes(skill.id)).length;
             
             return (
-              <div key={skill.id} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:border-[#bfe4cd] hover:shadow-lg transition-all group flex flex-col h-full">
+              <div key={skill.id} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:border-[#eaddcf] hover:shadow-lg transition-all group flex flex-col h-full">
                 <div className="flex justify-between items-start mb-2">
                     <div className="flex flex-col">
-                        <span className="bg-[#bfe4cd] text-[#10898b] font-mono font-bold px-2 py-1 rounded text-sm w-fit">
+                        <span className="bg-[#fcf9f6] text-[#c48b5e] font-mono font-bold px-2 py-1 rounded text-sm w-fit border border-[#eaddcf]">
                             {skill.code}
                         </span>
                         <span className="text-[10px] text-gray-500 mt-1 uppercase font-bold tracking-wide">
@@ -311,7 +311,7 @@ export const SkillManager: React.FC<SkillManagerProps> = ({
                         </span>
                     </div>
                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => handleEditClick(skill)} className="p-1.5 text-gray-400 hover:text-[#10898b] rounded hover:bg-[#bfe4cd]">
+                        <button onClick={() => handleEditClick(skill)} className="p-1.5 text-gray-400 hover:text-[#c48b5e] rounded hover:bg-[#fcf9f6]">
                             <Edit2 size={16} />
                         </button>
                         {canDelete && (
@@ -326,7 +326,7 @@ export const SkillManager: React.FC<SkillManagerProps> = ({
                 </p>
                 <div className="flex items-center justify-between pt-3 border-t border-gray-50">
                     <div className="flex items-center text-xs text-gray-500">
-                        <BookOpen size={14} className="mr-1.5 text-[#10898b]" />
+                        <BookOpen size={14} className="mr-1.5 text-[#c48b5e]" />
                         {skill.subject}
                     </div>
                     
@@ -340,7 +340,7 @@ export const SkillManager: React.FC<SkillManagerProps> = ({
                              )}
                              <button 
                                 onClick={() => openLinkModal(skill)}
-                                className={`p-1.5 rounded-lg transition-colors ${usageCount > 0 ? 'bg-[#10898b] text-white' : 'bg-gray-50 text-gray-400 hover:bg-[#bfe4cd] hover:text-[#10898b]'}`}
+                                className={`p-1.5 rounded-lg transition-colors ${usageCount > 0 ? 'bg-[#c48b5e] text-white' : 'bg-gray-50 text-gray-400 hover:bg-[#eaddcf] hover:text-[#c48b5e]'}`}
                                 title="Vincular a Turmas"
                              >
                                 <LinkIcon size={14} />
@@ -352,7 +352,7 @@ export const SkillManager: React.FC<SkillManagerProps> = ({
             );
         })}
         {filteredSkills.length === 0 && (
-          <div className="col-span-full py-12 text-center text-gray-500 bg-white rounded-xl border-2 border-dashed border-gray-200 hover:border-[#bfe4cd] transition-colors">
+          <div className="col-span-full py-12 text-center text-gray-500 bg-white rounded-xl border-2 border-dashed border-gray-200 hover:border-[#c48b5e] transition-colors">
               <div className="mx-auto w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mb-3">
                   <Library className="text-gray-300" size={24} />
               </div>
@@ -365,10 +365,10 @@ export const SkillManager: React.FC<SkillManagerProps> = ({
       {/* MODAL: VINCULAR HABILIDADE A TURMAS */}
       {linkingSkill && (
           <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-in fade-in zoom-in duration-200 border border-[#bfe4cd]">
-               <div className="px-6 py-5 bg-gradient-to-r from-[#10898b] to-[#0d7274] flex justify-between items-center">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-in fade-in zoom-in duration-200 border border-[#eaddcf]">
+               <div className="px-6 py-5 bg-gradient-to-r from-[#c48b5e] to-[#a0704a] flex justify-between items-center">
                    <h3 className="font-bold text-xl text-white flex items-center gap-2">
-                      <LinkIcon className="text-[#bfe4cd]" /> Vincular a Turmas
+                      <LinkIcon className="text-[#eaddcf]" /> Vincular a Turmas
                    </h3>
                    <button onClick={() => setLinkingSkill(null)} className="text-white/80 hover:text-white transition-colors">
                       <X size={24} />
@@ -377,11 +377,11 @@ export const SkillManager: React.FC<SkillManagerProps> = ({
                
                <div className="p-6">
                    <div className="mb-4 bg-gray-50 p-3 rounded-xl border border-gray-100">
-                       <p className="text-xs text-[#10898b] font-bold font-mono mb-1">{linkingSkill.code}</p>
+                       <p className="text-xs text-[#c48b5e] font-bold font-mono mb-1">{linkingSkill.code}</p>
                        <p className="text-sm text-gray-700">{linkingSkill.description}</p>
                    </div>
                    
-                   <p className="text-sm font-semibold text-[#000039] mb-3">Selecione as turmas que terão esta habilidade como foco:</p>
+                   <p className="text-sm font-semibold text-[#433422] mb-3">Selecione as turmas que terão esta habilidade como foco:</p>
                    
                    <div className="max-h-60 overflow-y-auto space-y-2 mb-6">
                        {classes.map(cls => {
@@ -390,13 +390,13 @@ export const SkillManager: React.FC<SkillManagerProps> = ({
                                <div 
                                   key={cls.id} 
                                   onClick={() => toggleClassSelection(cls.id)}
-                                  className={`flex items-center justify-between p-3 rounded-xl cursor-pointer border transition-all ${isSelected ? 'border-[#10898b] bg-[#bfe4cd]/20' : 'border-gray-200 hover:bg-gray-50'}`}
+                                  className={`flex items-center justify-between p-3 rounded-xl cursor-pointer border transition-all ${isSelected ? 'border-[#c48b5e] bg-[#fcf9f6]' : 'border-gray-200 hover:bg-gray-50'}`}
                                >
                                    <div className="flex items-center gap-3">
-                                       <School size={16} className={isSelected ? 'text-[#10898b]' : 'text-gray-400'} />
-                                       <span className={`text-sm font-medium ${isSelected ? 'text-[#10898b]' : 'text-gray-600'}`}>{cls.name}</span>
+                                       <School size={16} className={isSelected ? 'text-[#c48b5e]' : 'text-gray-400'} />
+                                       <span className={`text-sm font-medium ${isSelected ? 'text-[#c48b5e]' : 'text-gray-600'}`}>{cls.name}</span>
                                    </div>
-                                   {isSelected ? <CheckSquare size={20} className="text-[#10898b]" /> : <Square size={20} className="text-gray-300" />}
+                                   {isSelected ? <CheckSquare size={20} className="text-[#c48b5e]" /> : <Square size={20} className="text-gray-300" />}
                                </div>
                            );
                        })}
@@ -405,7 +405,7 @@ export const SkillManager: React.FC<SkillManagerProps> = ({
 
                    <button 
                       onClick={handleSaveLinks}
-                      className="w-full bg-[#10898b] text-white py-3 rounded-xl font-bold hover:bg-[#0d7274] shadow-lg shadow-[#10898b]/20 transition-all"
+                      className="w-full bg-[#c48b5e] text-white py-3 rounded-xl font-bold hover:bg-[#a0704a] shadow-lg shadow-[#c48b5e]/20 transition-all"
                    >
                       Salvar Vínculos
                    </button>

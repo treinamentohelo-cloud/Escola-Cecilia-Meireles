@@ -323,12 +323,12 @@ export const StudentManager: React.FC<StudentManagerProps> = ({
                     {/* Coluna Direita: Dados Principais */}
                     <div className="flex-1 space-y-4">
                         <div>
-                            <label className="block text-sm font-semibold text-[#c48b5e] mb-1.5 flex items-center gap-1">
+                            <label className="block text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-1">
                                 <User size={14} /> Nome Completo
                             </label>
                             <input 
                                 required
-                                className="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#c48b5e] focus:border-transparent transition-all text-[#433422] bg-[#fcf9f6] focus:bg-white"
+                                className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-gray-900 bg-white"
                                 value={formData.name}
                                 onChange={e => setFormData({...formData, name: e.target.value})}
                             />
@@ -336,22 +336,22 @@ export const StudentManager: React.FC<StudentManagerProps> = ({
 
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm font-semibold text-[#c48b5e] mb-1.5 flex items-center gap-1">
+                                <label className="block text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-1">
                                     <Hash size={14} /> Matrícula
                                 </label>
                                 <input 
-                                    className="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#c48b5e] focus:border-transparent transition-all text-[#433422] bg-[#fcf9f6] focus:bg-white"
+                                    className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-gray-900 bg-white"
                                     value={formData.registrationNumber}
                                     onChange={e => setFormData({...formData, registrationNumber: e.target.value})}
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-semibold text-[#c48b5e] mb-1.5 flex items-center gap-1">
+                                <label className="block text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-1">
                                     <Calendar size={14} /> Nascimento
                                 </label>
                                 <input 
                                     type="date"
-                                    className="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#c48b5e] focus:border-transparent transition-all text-[#433422] bg-[#fcf9f6] focus:bg-white"
+                                    className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-gray-900 bg-white"
                                     value={formData.birthDate}
                                     onChange={e => setFormData({...formData, birthDate: e.target.value})}
                                 />
@@ -359,10 +359,10 @@ export const StudentManager: React.FC<StudentManagerProps> = ({
                         </div>
 
                         <div>
-                            <label className="block text-sm font-semibold text-[#c48b5e] mb-1.5">Turma</label>
+                            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Turma</label>
                             <select 
                                 required
-                                className="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#c48b5e] focus:border-transparent transition-all text-[#433422] bg-[#fcf9f6] focus:bg-white"
+                                className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-gray-900 bg-white"
                                 value={formData.classId}
                                 onChange={e => setFormData({...formData, classId: e.target.value})}
                             >
@@ -379,28 +379,28 @@ export const StudentManager: React.FC<StudentManagerProps> = ({
                     <h4 className="font-bold text-[#433422] mb-4 text-lg">Informações de Contato</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div className="md:col-span-2">
-                            <label className="block text-sm font-semibold text-[#c48b5e] mb-1.5">Responsável Legal</label>
+                            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Responsável Legal</label>
                             <input 
-                                className="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#c48b5e] focus:border-transparent transition-all text-[#433422] bg-[#fcf9f6] focus:bg-white"
+                                className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-gray-900 bg-white"
                                 value={formData.parentName}
                                 onChange={e => setFormData({...formData, parentName: e.target.value})}
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-semibold text-[#c48b5e] mb-1.5 flex items-center gap-1">
+                            <label className="block text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-1">
                                 <Phone size={14} /> Telefone
                             </label>
                             <input 
                                 placeholder="(00) 00000-0000"
-                                className="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#c48b5e] focus:border-transparent transition-all text-[#433422] bg-[#fcf9f6] focus:bg-white"
+                                className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-gray-900 bg-white"
                                 value={formData.phone}
                                 onChange={e => setFormData({...formData, phone: e.target.value})}
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-semibold text-[#c48b5e] mb-1.5">Status da Matrícula</label>
+                            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Status da Matrícula</label>
                             <select 
-                                className="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#c48b5e] focus:border-transparent transition-all text-[#433422] bg-[#fcf9f6] focus:bg-white"
+                                className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-gray-900 bg-white"
                                 value={formData.status}
                                 onChange={e => setFormData({...formData, status: e.target.value as 'active' | 'inactive'})}
                             >

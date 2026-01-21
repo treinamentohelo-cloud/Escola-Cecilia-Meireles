@@ -136,13 +136,13 @@ export const StudentDetail: React.FC<StudentDetailProps> = ({
   if (student.remediationEntryDate) {
       timelineEvents.push({ 
           type: 'remediation_entry' as const, 
-          date: student.remediationEntryDate 
+          date: student.remediationEntryDate as string
       });
   }
   if (student.remediationExitDate) {
       timelineEvents.push({ 
           type: 'remediation_exit' as const, 
-          date: student.remediationExitDate 
+          date: student.remediationExitDate as string
       });
   }
 
@@ -305,12 +305,12 @@ export const StudentDetail: React.FC<StudentDetailProps> = ({
                     </div>
                     <div className="divide-y divide-gray-100">
                     {items.map(({ skill, assessment }) => {
-                        const isFocus = focusSkillsIds.includes(skill.id as string);
+                        const isFocus = focusSkillsIds.includes(skill.id);
                         return (
                         <div key={`${skill.id}-${assessment?.id}`} className="p-4 md:p-6 hover:bg-gray-50 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4">
                             <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
-                                <span className={`text-xs font-mono px-2 py-0.5 rounded border ${isFocus ? 'bg-[#c48b5e] text-white border-[#c48b5e]' : 'bg-indigo-50 text-[#c48b5e] border-[#eaddcf]'}`}>
+                                <span className={`text-xs font-mono px-2 py-0.5 rounded border ${isFocus ? 'bg-[#c48b5e] text-white border-[#c48b5e]' : 'bg-indigo-50 text-[#c48b5e] border-[#eaddcf] '}`}>
                                 {skill.code}
                                 </span>
                                 {isFocus && <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-bold flex items-center gap-0.5"><Star size={8} fill="currentColor" /> Foco</span>}
@@ -471,7 +471,7 @@ export const StudentDetail: React.FC<StudentDetailProps> = ({
                               } else if (item.type === 'remediation_entry') {
                                   return (
                                     <tr key={idx} className="bg-red-50/50 hover:bg-red-50 transition-colors border-l-4 border-red-400">
-                                        <td className="p-4 text-sm font-mono text-red-700 whitespace-nowrap align-top font-bold">{formatDateTime(item.date)}</td>
+                                        <td className="p-4 text-sm font-mono text-red-700 whitespace-nowrap align-top font-bold">{formatDateTime(item.date as string)}</td>
                                         <td className="p-4 align-top">
                                             <div className="text-sm font-bold text-red-800 mb-1 flex items-center gap-2"><AlertTriangle size={14} /> Reforço Escolar</div>
                                             <div className="text-xs text-red-600">Início do ciclo de intervenção.</div>
@@ -483,7 +483,7 @@ export const StudentDetail: React.FC<StudentDetailProps> = ({
                               } else if (item.type === 'remediation_exit') {
                                   return (
                                     <tr key={idx} className="bg-green-50/50 hover:bg-green-50 transition-colors border-l-4 border-green-400">
-                                        <td className="p-4 text-sm font-mono text-green-700 whitespace-nowrap align-top font-bold">{formatDateTime(item.date)}</td>
+                                        <td className="p-4 text-sm font-mono text-green-700 whitespace-nowrap align-top font-bold">{formatDateTime(item.date as string)}</td>
                                         <td className="p-4 align-top">
                                             <div className="text-sm font-bold text-green-800 mb-1 flex items-center gap-2"><Flag size={14} /> Reforço Escolar</div>
                                             <div className="text-xs text-green-600">Conclusão do ciclo.</div>
@@ -517,17 +517,17 @@ export const StudentDetail: React.FC<StudentDetailProps> = ({
               
               {/* Contexto */}
               <div>
-                <label className="block text-sm font-semibold text-[#c48b5e] mb-1.5 ml-1">Habilidade / Contexto</label>
-                <select required value={selectedSkillId} onChange={(e) => setSelectedSkillId(e.target.value)} className="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#c48b5e] bg-gray-50 focus:bg-white text-[#000039]">
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5 ml-1">Habilidade / Contexto</label>
+                <select required value={selectedSkillId} onChange={(e) => setSelectedSkillId(e.target.value)} className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 bg-white text-[#000039]">
                   <option value="">Selecione...</option>
-                  {skills.map(s => (<option key={s.id} value={s.id} className={focusSkillsIds.includes(s.id as string) ? 'font-bold text-[#c48b5e]' : ''}>{focusSkillsIds.includes(s.id as string) ? '★ ' : ''}{s.code} - {s.subject}</option>))}
+                  {skills.map(s => (<option key={s.id} value={s.id} className={focusSkillsIds.includes(s.id) ? 'font-bold text-[#c48b5e]' : ''}>{focusSkillsIds.includes(s.id) ? '★ ' : ''}{s.code} - {s.subject}</option>))}
                 </select>
                 {selectedSkillId && <p className="mt-2 text-xs text-gray-600 bg-[#eaddcf]/20 p-3 rounded-lg border border-[#eaddcf]">{skills.find(s => s.id === selectedSkillId)?.description}</p>}
               </div>
               
               <div>
-                <label className="block text-sm font-semibold text-[#c48b5e] mb-1.5 ml-1">Trimestre</label>
-                <select required className="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#c48b5e] bg-gray-50 focus:bg-white text-[#000039]" value={term} onChange={e => setTerm(e.target.value)}>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5 ml-1">Trimestre</label>
+                <select required className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 bg-white text-[#000039]" value={term} onChange={e => setTerm(e.target.value)}>
                     {TERMS.map(t => <option key={t} value={t}>{t}</option>)}
                 </select>
               </div>
@@ -535,10 +535,10 @@ export const StudentDetail: React.FC<StudentDetailProps> = ({
               {/* Critérios Verticais */}
               <div className="space-y-4 pt-2">
                   <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
-                        <label className="block text-xs font-bold text-[#c48b5e] uppercase tracking-wider mb-2">Resultado (BNCC)</label>
+                        <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Resultado (BNCC)</label>
                         <select 
                             required 
-                            className="w-full border border-gray-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-[#c48b5e] bg-white text-[#000039]"
+                            className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 bg-white text-[#000039]"
                             value={status}
                             onChange={(e) => setStatus(e.target.value as AssessmentStatus)}
                         >
@@ -600,8 +600,8 @@ export const StudentDetail: React.FC<StudentDetailProps> = ({
               )}
               
               <div>
-                <label className="block text-sm font-semibold text-[#c48b5e] mb-1.5 ml-1">Observações</label>
-                <textarea value={notes} onChange={(e) => setNotes(e.target.value)} className="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#c48b5e] bg-gray-50 focus:bg-white h-24 resize-none" placeholder="Detalhes..." />
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5 ml-1">Observações</label>
+                <textarea value={notes} onChange={(e) => setNotes(e.target.value)} className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 bg-white h-24 resize-none" placeholder="Detalhes..." />
               </div>
               <div className="pt-2">
                 <button type="submit" className="w-full bg-[#c48b5e] text-white py-3.5 rounded-xl font-bold hover:bg-[#a0704a] shadow-lg shadow-[#c48b5e]/20 transition-all transform hover:-translate-y-0.5">Salvar Avaliação</button>
