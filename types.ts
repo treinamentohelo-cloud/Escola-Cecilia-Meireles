@@ -79,4 +79,9 @@ export interface User {
   status?: 'active' | 'inactive';
 }
 
+export interface Setting {
+    id: string; // chave (ex: 'school_name')
+    value: string; // valor (ex: 'Escola Modelo')
+}
+
 export type Page = 'dashboard' | 'classes' | 'students' | 'assessments' | 'skills' | 'remediation' | 'student-detail' | 'users';

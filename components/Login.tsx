@@ -3,9 +3,10 @@ import { GraduationCap, AlertCircle, ArrowRight, ShieldCheck } from 'lucide-reac
 
 interface LoginProps {
   onLogin: (email: string, password: string) => Promise<boolean>;
+  schoolName: string;
 }
 
-export const Login: React.FC<LoginProps> = ({ onLogin }) => {
+export const Login: React.FC<LoginProps> = ({ onLogin, schoolName }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -36,6 +37,11 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
     }
   };
 
+  // Separa o nome da escola para destaque (assumindo que a última palavra é o destaque)
+  const nameParts = schoolName.split(' ');
+  const highlightName = nameParts.length > 1 ? nameParts.pop() : '';
+  const mainName = nameParts.join(' ');
+
   return (
     <div className="min-h-screen bg-[#f3efe9] flex items-center justify-center p-4 relative overflow-hidden">
       {/* Background Shapes */}
@@ -49,7 +55,9 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
           <div className="inline-flex items-center justify-center p-5 bg-[#c48b5e] rounded-2xl shadow-lg shadow-[#c48b5e]/20 mb-6 transform hover:scale-105 transition-transform duration-300">
             <GraduationCap className="text-white" size={48} strokeWidth={1.5} />
           </div>
-          <h1 className="text-3xl font-extrabold text-[#433422] tracking-tight">ESCOLA <span className="text-[#c48b5e]">OLAVO BILAC</span></h1>
+          <h1 className="text-3xl font-extrabold text-[#433422] tracking-tight uppercase">
+             {mainName} <span className="text-[#c48b5e]">{highlightName}</span>
+          </h1>
           <p className="text-[#8c7e72] mt-2 font-medium text-sm tracking-wide uppercase flex items-center justify-center gap-2">
             <span className="w-8 h-[1px] bg-[#eaddcf]"></span>
             Gestão Inteligente
@@ -108,7 +116,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
       </div>
       
       <div className="absolute bottom-4 text-[#8c7e72] text-xs font-light">
-         © {new Date().getFullYear()} Escola Olavo Bilac - Tecnologia Educacional
+         © {new Date().getFullYear()} {schoolName} - Tecnologia Educacional
       </div>
     </div>
   );

@@ -14,7 +14,9 @@ import {
   WifiOff,
   ChevronLeft,
   ChevronRight,
-  Menu
+  Menu,
+  Settings,
+  X
 } from 'lucide-react';
 import { api } from './supabaseClient'; // Agora importamos nosso cliente API customizado
 import { Dashboard } from './components/Dashboard';
@@ -111,7 +113,7 @@ export default function App() {
     try { return stored ? JSON.parse(stored) : null; } catch { return null; }
   });
 
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [apiStatus, setApiStatus] = useState<boolean>(false); // Connection status
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true); // Sidebar state
@@ -127,14 +129,35 @@ export default function App() {
   const [logs, setLogs] = useState<ClassDailyLog[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
 
-  // Check connection on mount
+  // Configuração Global
+  const [schoolName, setSchoolName] = useState('Escola Olavo Bilac');
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [tempSchoolName, setTempSchoolName] = useState('');
+
+  // Check connection and fetch public settings on mount
   useEffect(() => {
-    const check = async () => {
+    const init = async () => {
        const status = await api.checkConnection();
        setApiStatus(status);
+       fetchSettings();
     };
-    check();
+    init();
   }, []);
+
+  // Update document title
+  useEffect(() => {
+      document.title = schoolName;
+  }, [schoolName]);
+
+  const fetchSettings = async () => {
+      try {
+          const settings = await api.get('settings');
+          if (Array.isArray(settings)) {
+              const nameSetting = settings.find((s: any) => s.id === 'school_name');
+              if (nameSetting) setSchoolName(nameSetting.value);
+          }
+      } catch (err) { console.error('Erro ao buscar configurações', err); }
+  }
 
   const fetchData = async () => {
     try {
@@ -169,6 +192,7 @@ export default function App() {
         ]);
       }
       setApiStatus(true); // Success implies online
+      fetchSettings(); // Refresh settings too
 
     } catch (err) {
       console.error('Erro crítico ao buscar dados:', err);
@@ -219,6 +243,19 @@ export default function App() {
     setIsAuthenticated(false);
     setCurrentUser(null);
     setCurrentPage('dashboard');
+  };
+
+  const handleSaveSettings = async (e: React.FormEvent) => {
+      e.preventDefault();
+      try {
+          // O put/update do SupabaseClient/API usa a chave primária
+          await api.put('settings', 'school_name', { id: 'school_name', value: tempSchoolName });
+          setSchoolName(tempSchoolName);
+          setIsSettingsModalOpen(false);
+          alert('Configurações salvas com sucesso!');
+      } catch (e: any) {
+          alert('Erro ao salvar configurações: ' + e.message);
+      }
   };
 
   // --- CRUD OPERATIONS (Usando nova API) ---
@@ -340,8 +377,14 @@ export default function App() {
       try { await api.delete('class_daily_logs', id); await fetchData(); } catch(e:any) { alert('Erro: ' + e.message); }
   }
 
-  if (!isAuthenticated) return <Login onLogin={handleLogin} />;
-  if (isLoading) return <div className="h-screen flex items-center justify-center bg-[#fdfbf7]"><Loader2 className="animate-spin text-[#c48b5e]" size={40} /></div>;
+  if (!isAuthenticated) return <Login onLogin={handleLogin} schoolName={schoolName} />;
+  
+  // Render Loading while fetching initial data AFTER login
+  if (isLoading && isAuthenticated) return <div className="h-screen flex items-center justify-center bg-[#fdfbf7]"><Loader2 className="animate-spin text-[#c48b5e]" size={40} /></div>;
+
+  const schoolNameParts = schoolName.split(' ');
+  const schoolHighlight = schoolNameParts.length > 1 ? schoolNameParts.pop() : '';
+  const schoolMain = schoolNameParts.join(' ');
 
   return (
     <div className="flex h-screen bg-[#fdfbf7] overflow-hidden font-sans">
@@ -350,8 +393,8 @@ export default function App() {
             <div className={`flex items-center gap-3 ${!isSidebarOpen && 'justify-center w-full'}`}>
                 <div className="bg-[#c48b5e] p-2 rounded-xl text-white shadow-md shadow-[#c48b5e]/20 shrink-0"><GraduationCap size={24} /></div>
                 {isSidebarOpen && (
-                  <h1 className="text-xl font-extrabold tracking-tight uppercase text-[#433422] whitespace-nowrap overflow-hidden">
-                    Escola <span className="text-[#c48b5e]">Bilac</span>
+                  <h1 className="text-lg font-extrabold tracking-tight uppercase text-[#433422] leading-tight">
+                    {schoolMain} <span className="text-[#c48b5e] block">{schoolHighlight}</span>
                   </h1>
                 )}
             </div>
@@ -409,6 +452,17 @@ export default function App() {
                </div>
             )}
             
+            {/* Admin Settings Button */}
+            {currentUser?.role === 'admin' && (
+                <button
+                    onClick={() => { setTempSchoolName(schoolName); setIsSettingsModalOpen(true); }}
+                    className={`w-full flex items-center ${isSidebarOpen ? 'gap-2 px-2' : 'justify-center'} text-[#8c7e72] hover:text-[#c48b5e] p-2 transition-colors text-sm font-bold mb-1`}
+                    title="Configurações da Escola"
+                >
+                    <Settings size={isSidebarOpen ? 16 : 20} /> {isSidebarOpen && 'Configurações'}
+                </button>
+            )}
+
             <button 
               onClick={handleLogout} 
               className={`w-full flex items-center ${isSidebarOpen ? 'gap-2 px-2' : 'justify-center'} text-[#8c7e72] hover:text-[#c48b5e] p-2 transition-colors text-sm font-bold`}
@@ -488,6 +542,36 @@ export default function App() {
         />}
         {currentPage === 'users' && <UserManager users={users} currentUser={currentUser} onAddUser={handleAddUser} onUpdateUser={handleUpdateUser} onDeleteUser={handleDeleteUser} />}
       </main>
+
+      {/* Settings Modal */}
+      {isSettingsModalOpen && (
+          <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden animate-in fade-in zoom-in duration-200 border border-[#eaddcf]">
+                <div className="px-6 py-5 bg-gradient-to-r from-[#c48b5e] to-[#a0704a] flex justify-between items-center">
+                    <h3 className="font-bold text-lg text-white flex items-center gap-2">
+                        <Settings className="text-[#eaddcf]" size={20} /> Configurações
+                    </h3>
+                    <button onClick={() => setIsSettingsModalOpen(false)} className="text-white/80 hover:text-white transition-colors"><X size={24} /></button>
+                </div>
+                <form onSubmit={handleSaveSettings} className="p-6 space-y-4">
+                    <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1.5 ml-1">Nome da Escola</label>
+                        <input 
+                            required
+                            className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white" 
+                            placeholder="Ex: Escola Modelo" 
+                            value={tempSchoolName} 
+                            onChange={(e) => setTempSchoolName(e.target.value)} 
+                        />
+                    </div>
+                    <div className="pt-2 flex gap-3">
+                        <button type="button" onClick={() => setIsSettingsModalOpen(false)} className="flex-1 px-4 py-3 border border-gray-200 rounded-xl text-gray-600 font-medium hover:bg-gray-50">Cancelar</button>
+                        <button type="submit" className="flex-1 px-4 py-3 bg-[#c48b5e] text-white rounded-xl font-bold hover:bg-[#a0704a] shadow-lg">Salvar</button>
+                    </div>
+                </form>
+            </div>
+          </div>
+      )}
     </div>
   );
 }

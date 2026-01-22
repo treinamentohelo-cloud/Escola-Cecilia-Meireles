@@ -194,11 +194,12 @@ export const StudentDetail: React.FC<StudentDetailProps> = ({
     }
   };
   
-  const formatDate = (dateString?: string) => dateString ? new Date(dateString).toLocaleDateString('pt-BR') : '-';
-  const formatDateTime = (dateString?: string) => {
+  // Use any to avoid "unknown is not assignable to string" errors in strict mode
+  const formatDate = (dateString?: any) => dateString ? new Date(dateString).toLocaleDateString('pt-BR') : '-';
+  const formatDateTime = (dateString?: any) => {
       if (!dateString) return '-';
       const d = new Date(dateString);
-      return dateString.includes('T') 
+      return (typeof dateString === 'string' && dateString.includes('T'))
          ? d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})
          : d.toLocaleDateString('pt-BR');
   };

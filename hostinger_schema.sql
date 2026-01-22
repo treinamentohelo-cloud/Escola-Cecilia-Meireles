@@ -1,3 +1,4 @@
+
 -- ====================================================================================
 -- SCRIPT DE CRIAÇÃO DE TABELAS - MYSQL (HOSTINGER)
 -- Execute este script no phpMyAdmin da Hostinger
@@ -106,7 +107,14 @@ CREATE TABLE IF NOT EXISTS `class_daily_logs` (
     CONSTRAINT `fk_log_class` FOREIGN KEY (`class_id`) REFERENCES `classes` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 8. DADOS PADRÃO: DISCIPLINAS E USUÁRIO ADMIN (Se não existir)
+-- 8. TABELA DE CONFIGURAÇÕES (settings)
+CREATE TABLE IF NOT EXISTS `settings` (
+    `id` VARCHAR(50) NOT NULL,
+    `value` TEXT NOT NULL,
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 9. DADOS PADRÃO
 INSERT IGNORE INTO `subjects` (`id`, `name`) VALUES 
 ('sub-lp', 'Língua Portuguesa'),
 ('sub-mat', 'Matemática'),
@@ -117,6 +125,8 @@ INSERT IGNORE INTO `subjects` (`id`, `name`) VALUES
 ('sub-ing', 'Inglês'),
 ('sub-edfis', 'Educação Física'),
 ('sub-ensrel', 'Ensino Religioso');
+
+INSERT IGNORE INTO `settings` (`id`, `value`) VALUES ('school_name', 'Escola Olavo Bilac');
 
 -- Cria um admin padrão caso a tabela esteja vazia (Senha: 123456)
 INSERT IGNORE INTO `users` (`id`, `name`, `email`, `password`, `role`, `status`) 
