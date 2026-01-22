@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Search, Edit2, Trash2, Shield, User as UserIcon, Key, Eye, EyeOff, AlertCircle, X, Users, CheckCircle, XCircle } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, Shield, User as UserIcon, Key, Eye, EyeOff, AlertCircle, X, Users, CheckCircle, XCircle, Info } from 'lucide-react';
 import { User, UserRole } from '../types';
 
 interface UserManagerProps {
@@ -140,6 +140,18 @@ export const UserManager: React.FC<UserManagerProps> = ({
              </div>
              
              <form onSubmit={handleSubmit} className="p-8 space-y-5">
+                
+                {/* Aviso sobre e-mails */}
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex gap-3 text-sm text-amber-900 mb-2">
+                    <Info size={24} className="shrink-0 text-amber-600" />
+                    <div>
+                        <p className="font-bold mb-1">Atenção: O sistema não envia e-mails automáticos.</p>
+                        <p className="text-amber-800">
+                            Após cadastrar, você deve entregar o <strong>E-mail</strong> e a <strong>Senha</strong> definidos abaixo diretamente ao professor/usuário.
+                        </p>
+                    </div>
+                </div>
+
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5">Nome Completo</label>
                   <input 
@@ -255,7 +267,7 @@ export const UserManager: React.FC<UserManagerProps> = ({
           </thead>
           <tbody className="divide-y divide-gray-100">
             {filteredUsers.map(user => (
-              <tr key={user.id} className="hover:bg-[#eaddcf]/20 transition-colors">
+              <tr key={user.id} className="hover:bg-[#eaddcf]/20 transition-colors group">
                 <td className="p-4">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-[#fcf9f6] border border-[#eaddcf] flex items-center justify-center text-[#c48b5e] relative">
@@ -268,7 +280,15 @@ export const UserManager: React.FC<UserManagerProps> = ({
                     </div>
                     <div>
                       <p className={`font-medium ${user.status === 'inactive' ? 'text-gray-400 line-through' : 'text-[#433422]'}`}>{user.name}</p>
-                      <p className="text-xs text-gray-500">{user.email}</p>
+                      <div className="flex items-center gap-2">
+                          <p className="text-xs text-gray-500">{user.email}</p>
+                          {/* Password Hint for Admin Debugging */}
+                          {user.password && (
+                              <span className="text-[10px] text-gray-300 cursor-help opacity-0 group-hover:opacity-100 transition-opacity" title={`Senha atual: ${user.password}`}>
+                                  (Senha: {user.password})
+                              </span>
+                          )}
+                      </div>
                     </div>
                   </div>
                 </td>
