@@ -136,13 +136,13 @@ export const StudentDetail: React.FC<StudentDetailProps> = ({
   if (student.remediationEntryDate) {
       timelineEvents.push({ 
           type: 'remediation_entry' as const, 
-          date: student.remediationEntryDate as string
+          date: student.remediationEntryDate
       });
   }
   if (student.remediationExitDate) {
       timelineEvents.push({ 
           type: 'remediation_exit' as const, 
-          date: student.remediationExitDate as string
+          date: student.remediationExitDate
       });
   }
 
@@ -471,7 +471,7 @@ export const StudentDetail: React.FC<StudentDetailProps> = ({
                               } else if (item.type === 'remediation_entry') {
                                   return (
                                     <tr key={idx} className="bg-red-50/50 hover:bg-red-50 transition-colors border-l-4 border-red-400">
-                                        <td className="p-4 text-sm font-mono text-red-700 whitespace-nowrap align-top font-bold">{formatDateTime(item.date as string)}</td>
+                                        <td className="p-4 text-sm font-mono text-red-700 whitespace-nowrap align-top font-bold">{formatDateTime(item.date)}</td>
                                         <td className="p-4 align-top">
                                             <div className="text-sm font-bold text-red-800 mb-1 flex items-center gap-2"><AlertTriangle size={14} /> Reforço Escolar</div>
                                             <div className="text-xs text-red-600">Início do ciclo de intervenção.</div>
@@ -483,7 +483,7 @@ export const StudentDetail: React.FC<StudentDetailProps> = ({
                               } else if (item.type === 'remediation_exit') {
                                   return (
                                     <tr key={idx} className="bg-green-50/50 hover:bg-green-50 transition-colors border-l-4 border-green-400">
-                                        <td className="p-4 text-sm font-mono text-green-700 whitespace-nowrap align-top font-bold">{formatDateTime(item.date as string)}</td>
+                                        <td className="p-4 text-sm font-mono text-green-700 whitespace-nowrap align-top font-bold">{formatDateTime(item.date)}</td>
                                         <td className="p-4 align-top">
                                             <div className="text-sm font-bold text-green-800 mb-1 flex items-center gap-2"><Flag size={14} /> Reforço Escolar</div>
                                             <div className="text-xs text-green-600">Conclusão do ciclo.</div>
