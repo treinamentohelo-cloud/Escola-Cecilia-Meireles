@@ -84,4 +84,4 @@ export interface Setting {
     value: string; // valor (ex: 'Escola Modelo')
 }
 
-export type Page = 'dashboard' | 'classes' | 'students' | 'assessments' | 'skills' | 'remediation' | 'student-detail' | 'users';
+export type Page = 'dashboard' | 'classes' | 'students' | 'assessments' | 'skills' | 'remediation' | 'student-detail' | 'users' | 'parent-portal';

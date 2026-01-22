@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { GraduationCap, AlertCircle, ArrowRight, ShieldCheck } from 'lucide-react';
+import { GraduationCap, AlertCircle, ArrowRight, ShieldCheck, Users } from 'lucide-react';
 
 interface LoginProps {
   onLogin: (email: string, password: string) => Promise<boolean>;
   schoolName: string;
+  onParentMode: () => void;
 }
 
-export const Login: React.FC<LoginProps> = ({ onLogin, schoolName }) => {
+export const Login: React.FC<LoginProps> = ({ onLogin, schoolName, onParentMode }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -95,7 +96,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin, schoolName }) => {
               placeholder="••••••••"
             />
           </div>
-          <div className="pt-2">
+          <div className="pt-2 space-y-3">
             <button 
                 type="submit" 
                 disabled={isLoading}
@@ -104,6 +105,14 @@ export const Login: React.FC<LoginProps> = ({ onLogin, schoolName }) => {
                 {isLoading ? 'Autenticando...' : (
                     <>Acessar Plataforma <ArrowRight size={18} /></>
                 )}
+            </button>
+            
+            <button 
+                type="button"
+                onClick={onParentMode}
+                className="w-full bg-white border-2 border-[#eaddcf] text-[#8c7e72] font-bold py-3.5 rounded-xl transition-all hover:bg-[#fcf9f6] hover:text-[#c48b5e] hover:border-[#c48b5e] flex items-center justify-center gap-2"
+            >
+                <Users size={18} /> Sou Responsável / Pai
             </button>
           </div>
         </form>

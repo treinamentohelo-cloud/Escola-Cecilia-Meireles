@@ -28,6 +28,7 @@ import { Login } from './components/Login';
 import { SkillManager } from './components/SkillManager';
 import { StudentDetail } from './components/StudentDetail';
 import { UserManager } from './components/UserManager';
+import { ParentPortal } from './components/ParentPortal';
 import { 
   ClassGroup, 
   Student, 
@@ -116,7 +117,12 @@ export default function App() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [apiStatus, setApiStatus] = useState<boolean>(false); // Connection status
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true); // Sidebar state
+  
+  // Sidebar states
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true); // Desktop collapse
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // Mobile toggler
+
+  const [isParentMode, setIsParentMode] = useState(false); // New Mode
   
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
@@ -197,7 +203,6 @@ export default function App() {
     } catch (err) {
       console.error('Erro crítico ao buscar dados:', err);
       setApiStatus(false);
-      // alert('Ocorreu um erro ao carregar os dados. Verifique a conexão com a API.');
     } finally {
       setIsLoading(false);
     }
@@ -377,7 +382,44 @@ export default function App() {
       try { await api.delete('class_daily_logs', id); await fetchData(); } catch(e:any) { alert('Erro: ' + e.message); }
   }
 
-  if (!isAuthenticated) return <Login onLogin={handleLogin} schoolName={schoolName} />;
+  // Parent Login Helper
+  const handleParentLogin = async (reg: string, birth: string) => {
+     // Ensure we have fresh data for the portal
+     await fetchData();
+     const student = await api.parentLogin(reg, birth);
+     if (student) {
+         // Map the single student data correctly
+         return mapStudentFromDB(student);
+     }
+     return null;
+  }
+
+  // Navigation Helper (Closes mobile menu)
+  const navigateTo = (page: Page) => {
+    setCurrentPage(page);
+    setIsMobileMenuOpen(false);
+  }
+
+  if (isParentMode) {
+      return (
+          <ParentPortal 
+             onLogin={handleParentLogin} 
+             onBack={() => setIsParentMode(false)}
+             students={students}
+             assessments={assessments}
+             skills={skills}
+             classes={classes}
+          />
+      );
+  }
+
+  if (!isAuthenticated) return (
+    <Login 
+        onLogin={handleLogin} 
+        schoolName={schoolName} 
+        onParentMode={() => setIsParentMode(true)} 
+    />
+  );
   
   // Render Loading while fetching initial data AFTER login
   if (isLoading && isAuthenticated) return <div className="h-screen flex items-center justify-center bg-[#fdfbf7]"><Loader2 className="animate-spin text-[#c48b5e]" size={40} /></div>;
@@ -388,8 +430,35 @@ export default function App() {
 
   return (
     <div className="flex h-screen bg-[#fdfbf7] overflow-hidden font-sans">
-      <aside className={`bg-[#f3efe9] text-[#433422] p-4 hidden md:flex flex-col border-r border-[#eaddcf] transition-all duration-300 ${isSidebarOpen ? 'w-72' : 'w-20'}`}>
-        <div className="flex items-center justify-between mb-8 px-1">
+      
+      {/* Mobile Header */}
+      <div className="md:hidden fixed top-0 left-0 w-full bg-white z-40 border-b border-[#eaddcf] px-4 py-3 flex items-center justify-between shadow-sm">
+          <div className="flex items-center gap-2">
+             <div className="bg-[#c48b5e] p-1.5 rounded-lg text-white"><GraduationCap size={20} /></div>
+             <span className="font-bold text-[#433422] truncate max-w-[200px]">{schoolName}</span>
+          </div>
+          <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="text-[#8c7e72] p-2">
+             {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+      </div>
+
+      {/* Mobile Menu Overlay */}
+      {isMobileMenuOpen && (
+        <div 
+          className="md:hidden fixed inset-0 bg-black/50 z-30"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Sidebar (Responsive) */}
+      <aside className={`
+          fixed md:static inset-y-0 left-0 z-40 bg-[#f3efe9] text-[#433422] 
+          flex flex-col border-r border-[#eaddcf] transition-all duration-300 transform
+          ${isMobileMenuOpen ? 'translate-x-0 w-72 shadow-2xl' : '-translate-x-full md:translate-x-0'}
+          ${isSidebarOpen ? 'md:w-72' : 'md:w-20'}
+          pt-16 md:pt-4 p-4
+      `}>
+        <div className="hidden md:flex items-center justify-between mb-8 px-1">
             <div className={`flex items-center gap-3 ${!isSidebarOpen && 'justify-center w-full'}`}>
                 <div className="bg-[#c48b5e] p-2 rounded-xl text-white shadow-md shadow-[#c48b5e]/20 shrink-0"><GraduationCap size={24} /></div>
                 {isSidebarOpen && (
@@ -405,22 +474,23 @@ export default function App() {
             )}
         </div>
         
+        {/* Toggle Expand (Desktop Only) */}
         {!isSidebarOpen && (
-          <div className="flex justify-center mb-6">
+          <div className="hidden md:flex justify-center mb-6">
             <button onClick={() => setIsSidebarOpen(true)} className="text-[#8c7e72] hover:text-[#c48b5e] p-2 rounded-lg hover:bg-[#eaddcf]/50">
               <ChevronRight size={20} />
             </button>
           </div>
         )}
         
-        <nav className="flex-1 space-y-2">
-          <NavItem icon={<LayoutDashboard size={20} />} label="Dashboard" active={currentPage === 'dashboard'} collapsed={!isSidebarOpen} onClick={() => setCurrentPage('dashboard')} />
-          <NavItem icon={<School size={20} />} label="Turmas" active={currentPage === 'classes'} collapsed={!isSidebarOpen} onClick={() => setCurrentPage('classes')} />
-          <NavItem icon={<Users size={20} />} label="Alunos" active={currentPage === 'students'} collapsed={!isSidebarOpen} onClick={() => setCurrentPage('students')} />
-          <NavItem icon={<ClipboardCheck size={20} />} label="Avaliações" active={currentPage === 'assessments'} collapsed={!isSidebarOpen} onClick={() => setCurrentPage('assessments')} />
-          <NavItem icon={<AlertTriangle size={20} />} label="Reforço" active={currentPage === 'remediation'} collapsed={!isSidebarOpen} onClick={() => setCurrentPage('remediation')} />
-          <NavItem icon={<BookOpen size={20} />} label="BNCC" active={currentPage === 'skills'} collapsed={!isSidebarOpen} onClick={() => setCurrentPage('skills')} />
-          {currentUser?.role === 'admin' && <NavItem icon={<UserIcon size={20} />} label="Equipe" active={currentPage === 'users'} collapsed={!isSidebarOpen} onClick={() => setCurrentPage('users')} />}
+        <nav className="flex-1 space-y-2 overflow-y-auto no-scrollbar">
+          <NavItem icon={<LayoutDashboard size={20} />} label="Dashboard" active={currentPage === 'dashboard'} collapsed={!isSidebarOpen} onClick={() => navigateTo('dashboard')} />
+          <NavItem icon={<School size={20} />} label="Turmas" active={currentPage === 'classes'} collapsed={!isSidebarOpen} onClick={() => navigateTo('classes')} />
+          <NavItem icon={<Users size={20} />} label="Alunos" active={currentPage === 'students'} collapsed={!isSidebarOpen} onClick={() => navigateTo('students')} />
+          <NavItem icon={<ClipboardCheck size={20} />} label="Avaliações" active={currentPage === 'assessments'} collapsed={!isSidebarOpen} onClick={() => navigateTo('assessments')} />
+          <NavItem icon={<AlertTriangle size={20} />} label="Reforço" active={currentPage === 'remediation'} collapsed={!isSidebarOpen} onClick={() => navigateTo('remediation')} />
+          <NavItem icon={<BookOpen size={20} />} label="BNCC" active={currentPage === 'skills'} collapsed={!isSidebarOpen} onClick={() => navigateTo('skills')} />
+          {currentUser?.role === 'admin' && <NavItem icon={<UserIcon size={20} />} label="Equipe" active={currentPage === 'users'} collapsed={!isSidebarOpen} onClick={() => navigateTo('users')} />}
         </nav>
 
         <div className="mt-auto pt-6 border-t border-[#eaddcf]">
@@ -434,7 +504,7 @@ export default function App() {
                  <span className="w-2 h-2 rounded-full bg-current animate-pulse"></span>
               </div>
             ) : (
-               <div className={`flex justify-center mb-4`}>
+               <div className={`hidden md:flex justify-center mb-4`}>
                   <div className={`w-3 h-3 rounded-full ${apiStatus ? 'bg-green-500' : 'bg-red-500'} animate-pulse`} title={apiStatus ? "Online" : "Offline"}></div>
                </div>
             )}
@@ -445,7 +515,7 @@ export default function App() {
                   <p className="text-[10px] text-[#c48b5e] font-medium uppercase truncate">{currentUser?.role}</p>
               </div>
             ) : (
-               <div className="mb-4 flex justify-center">
+               <div className="hidden md:flex mb-4 justify-center">
                   <div className="w-8 h-8 rounded-full bg-[#eaddcf] flex items-center justify-center text-[#c48b5e] font-bold text-xs">
                     {currentUser?.name.charAt(0)}
                   </div>
@@ -455,7 +525,7 @@ export default function App() {
             {/* Admin Settings Button */}
             {currentUser?.role === 'admin' && (
                 <button
-                    onClick={() => { setTempSchoolName(schoolName); setIsSettingsModalOpen(true); }}
+                    onClick={() => { setTempSchoolName(schoolName); setIsSettingsModalOpen(true); setIsMobileMenuOpen(false); }}
                     className={`w-full flex items-center ${isSidebarOpen ? 'gap-2 px-2' : 'justify-center'} text-[#8c7e72] hover:text-[#c48b5e] p-2 transition-colors text-sm font-bold mb-1`}
                     title="Configurações da Escola"
                 >
@@ -473,7 +543,7 @@ export default function App() {
         </div>
       </aside>
 
-      <main className="flex-1 overflow-auto p-4 md:p-10 transition-all">
+      <main className="flex-1 overflow-auto p-4 md:p-10 transition-all pt-16 md:pt-10">
         {currentPage === 'dashboard' && <Dashboard classes={classes} students={students} assessments={assessments} skills={skills} currentUser={currentUser} onNavigateToRemediation={() => setCurrentPage('remediation')} />}
         
         {currentPage === 'classes' && <ClassList 
@@ -579,10 +649,10 @@ export default function App() {
 const NavItem = ({ icon, label, active, collapsed, onClick }: any) => (
   <button 
     onClick={onClick} 
-    className={`w-full flex items-center ${collapsed ? 'justify-center px-2' : 'gap-4 px-4'} py-3.5 rounded-2xl transition-all duration-200 ${active ? 'bg-white text-[#c48b5e] shadow-sm border border-[#eaddcf] font-bold' : 'text-[#8c7e72] hover:text-[#433422] hover:bg-[#eaddcf]/50 font-medium'}`}
+    className={`w-full flex items-center ${collapsed ? 'justify-center px-2 md:px-0' : 'gap-4 px-4'} py-3.5 rounded-2xl transition-all duration-200 ${active ? 'bg-white text-[#c48b5e] shadow-sm border border-[#eaddcf] font-bold' : 'text-[#8c7e72] hover:text-[#433422] hover:bg-[#eaddcf]/50 font-medium'}`}
     title={collapsed ? label : undefined}
   >
     {icon} 
-    {!collapsed && <span className="text-sm whitespace-nowrap">{label}</span>}
+    <span className={`text-sm whitespace-nowrap ${collapsed ? 'md:hidden' : 'block'}`}>{label}</span>
   </button>
 );

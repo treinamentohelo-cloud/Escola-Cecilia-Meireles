@@ -1,44 +1,70 @@
 <?php
 // ====================================================================================
-// API BACKEND PARA HOSTINGER
-// Salve este arquivo como 'api.php' na pasta 'public_html' da sua hospedagem.
+// API BACKEND PARA HOSTINGER (ATUALIZADO)
 // ====================================================================================
 
-// Cabeçalhos CORS para permitir acesso do React
+// Cabeçalhos CORS
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
 header("Content-Type: application/json; charset=UTF-8");
 
-// Trata preflight request do navegador
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit();
 }
 
-// CONFIGURAÇÃO DO BANCO DE DADOS
+// CONFIGURAÇÃO DO BANCO
 $host = 'localhost';
 $db_name = 'u850687847_database';
 $username = 'u850687847_usuario';
-$password = 'SUA_SENHA_DO_BANCO_AQUI'; // <--- IMPORTANTE: COLOQUE SUA SENHA AQUI ANTES DE FAZER UPLOAD
+$password = 'SUA_SENHA_DO_BANCO_AQUI'; // <--- ATUALIZE AQUI COM SUA SENHA
 
 try {
     $conn = new PDO("mysql:host=$host;dbname=$db_name;charset=utf8mb4", $username, $password);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch(PDOException $e) {
     http_response_code(500);
-    echo json_encode(["error" => "Erro de conexão com o banco de dados: " . $e->getMessage()]);
+    echo json_encode(["error" => "Erro de conexão: " . $e->getMessage()]);
     exit();
 }
 
-// Roteamento Básico
 $method = $_SERVER['REQUEST_METHOD'];
-$table = isset($_GET['table']) ? preg_replace('/[^a-z0-9_]/', '', $_GET['table']) : ''; // Sanitização básica
+$table = isset($_GET['table']) ? preg_replace('/[^a-z0-9_]/', '', $_GET['table']) : '';
 $id = isset($_GET['id']) ? $_GET['id'] : '';
+$action = isset($_GET['action']) ? $_GET['action'] : '';
 
-// Captura dados do Body (JSON)
-$inputJSON = file_get_contents("php://input");
-$data = json_decode($inputJSON, true);
+// 1. ROTA DE UPLOAD DE ARQUIVOS
+if ($action === 'upload' && $method === 'POST') {
+    if (isset($_FILES['file'])) {
+        $uploadDir = 'uploads/';
+        // Cria a pasta se não existir
+        if (!file_exists($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
+        }
+
+        $extension = pathinfo($_FILES['file']['name'], PATHINFO_EXTENSION);
+        $newFileName = uniqid() . '.' . $extension;
+        $targetFile = $uploadDir . $newFileName;
+
+        if (move_uploaded_file($_FILES['file']['tmp_name'], $targetFile)) {
+            // Retorna a URL completa
+            $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
+            $domain = $_SERVER['HTTP_HOST'];
+            $path = dirname($_SERVER['PHP_SELF']);
+            $fullUrl = "$protocol://$domain$path/$targetFile";
+            
+            echo json_encode(["success" => true, "url" => $fullUrl]);
+        } else {
+            http_response_code(500);
+            echo json_encode(["error" => "Falha ao mover arquivo"]);
+        }
+    } else {
+        http_response_code(400);
+        echo json_encode(["error" => "Nenhum arquivo enviado"]);
+    }
+    exit();
+}
 
 // Health Check
 if ($table === 'health') {
@@ -46,19 +72,37 @@ if ($table === 'health') {
     exit();
 }
 
-// ROTA DE LOGIN (Especial)
+// 2. ROTA DE LOGIN PARENTAL (Portal do Responsável)
+if ($action === 'parent_login' && $method === 'POST') {
+    $input = json_decode(file_get_contents("php://input"), true);
+    $reg = $input['registration_number'] ?? '';
+    $birth = $input['birth_date'] ?? '';
+
+    $stmt = $conn->prepare("SELECT * FROM students WHERE registration_number = :reg AND birth_date = :birth LIMIT 1");
+    $stmt->execute(['reg' => $reg, 'birth' => $birth]);
+    $student = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($student) {
+        echo json_encode(["success" => true, "student" => $student]);
+    } else {
+        http_response_code(401);
+        echo json_encode(["error" => "Dados não conferem"]);
+    }
+    exit();
+}
+
+// 3. ROTA DE LOGIN ADMIN/PROF
 if ($table === 'login' && $method === 'POST') {
-    $email = $data['email'] ?? '';
-    $pass = $data['password'] ?? '';
+    $input = json_decode(file_get_contents("php://input"), true);
+    $email = $input['email'] ?? '';
+    $pass = $input['password'] ?? '';
     
-    // Busca usuário
     $stmt = $conn->prepare("SELECT * FROM users WHERE email = :email LIMIT 1");
     $stmt->execute(['email' => $email]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    // Verificação simples (Idealmente usar password_verify com hash)
     if ($user && $user['password'] === $pass) {
-        unset($user['password']); // Remove senha do retorno
+        unset($user['password']);
         echo json_encode($user);
     } else {
         http_response_code(401);
@@ -69,11 +113,15 @@ if ($table === 'login' && $method === 'POST') {
 
 // Validação de Tabela
 if (!$table) {
-    echo json_encode(["message" => "API Online. Informe ?table=nome_da_tabela"]);
+    echo json_encode(["message" => "API Online."]);
     exit();
 }
 
-// Operações CRUD
+// Captura JSON input para POST/PUT padrão
+$inputJSON = file_get_contents("php://input");
+$data = json_decode($inputJSON, true);
+
+// Operações CRUD Padrão
 switch ($method) {
     case 'GET':
         if ($id) {
@@ -81,11 +129,10 @@ switch ($method) {
             $stmt->execute(['id' => $id]);
             echo json_encode($stmt->fetch(PDO::FETCH_ASSOC));
         } else {
-            // Filtros simples via query params (ex: ?class_id=123)
             $whereClauses = [];
             $params = [];
             foreach ($_GET as $key => $val) {
-                if ($key !== 'table' && $key !== 'id') {
+                if ($key !== 'table' && $key !== 'id' && $key !== 'action') {
                     $whereClauses[] = "$key = :$key";
                     $params[$key] = $val;
                 }
@@ -95,10 +142,7 @@ switch ($method) {
             if (!empty($whereClauses)) {
                 $sql .= " WHERE " . implode(" AND ", $whereClauses);
             }
-            // Ordenação padrão por created_at se existir
-            if ($table !== 'users') { // Exemplo
-                 $sql .= " ORDER BY created_at DESC";
-            }
+            if ($table !== 'users') $sql .= " ORDER BY created_at DESC";
 
             $stmt = $conn->prepare($sql);
             $stmt->execute($params);
@@ -107,11 +151,12 @@ switch ($method) {
         break;
 
     case 'POST':
+        if (!$data) $data = $_POST; // Fallback se não for JSON body
+
         $keys = array_keys($data);
         $fields = implode(", ", $keys);
         $placeholders = ":" . implode(", :", $keys);
         
-        // Converte Arrays/Objetos para JSON string (para colunas JSON do MySQL)
         foreach ($data as $key => $value) {
             if (is_array($value)) $data[$key] = json_encode($value);
         }
@@ -157,7 +202,7 @@ switch ($method) {
             echo json_encode(["success" => true]);
         } catch (PDOException $e) {
              http_response_code(400);
-             echo json_encode(["error" => "Erro ao deletar (verifique dependências): " . $e->getMessage()]);
+             echo json_encode(["error" => "Erro ao deletar: " . $e->getMessage()]);
         }
         break;
 }

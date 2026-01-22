@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Plus, Search, Camera, Filter, User, Calendar, Phone, Hash, Edit2, Trash2, Upload, X, Users, Archive, RefreshCcw } from 'lucide-react';
+import { Plus, Search, Camera, Filter, User, Calendar, Phone, Hash, Edit2, Trash2, Upload, X, Users, Archive, RefreshCcw, Loader2 } from 'lucide-react';
 import { Student, ClassGroup, User as UserType } from '../types';
+import { api } from '../supabaseClient';
 
 interface StudentManagerProps {
   students: Student[];
@@ -27,6 +28,7 @@ export const StudentManager: React.FC<StudentManagerProps> = ({
   const [filterClass, setFilterClass] = useState('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const canDelete = currentUser?.role !== 'professor';
 
@@ -64,6 +66,7 @@ export const StudentManager: React.FC<StudentManagerProps> = ({
     });
     setEditingId(null);
     setIsModalOpen(false);
+    setIsUploading(false);
   };
 
   const handleEditClick = (e: React.MouseEvent, student: Student) => {
@@ -100,14 +103,26 @@ export const StudentManager: React.FC<StudentManagerProps> = ({
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData(prev => ({ ...prev, avatarUrl: reader.result as string }));
-      };
-      reader.readAsDataURL(file);
+      setIsUploading(true);
+      try {
+          const formDataUpload = new FormData();
+          formDataUpload.append('file', file);
+          
+          const result = await api.upload(formDataUpload);
+          if (result.success && result.url) {
+              setFormData(prev => ({ ...prev, avatarUrl: result.url }));
+          } else {
+              alert("Erro ao fazer upload da imagem.");
+          }
+      } catch (err) {
+          console.error(err);
+          alert("Erro na conexão para upload.");
+      } finally {
+          setIsUploading(false);
+      }
     }
   };
 
@@ -302,7 +317,9 @@ export const StudentManager: React.FC<StudentManagerProps> = ({
                     {/* Coluna Esquerda: Foto */}
                     <div className="flex flex-col items-center gap-3">
                          <div className="w-24 h-24 bg-[#fcf9f6] rounded-full flex items-center justify-center border-2 border-dashed border-[#c48b5e]/30 overflow-hidden relative group">
-                            {formData.avatarUrl ? (
+                            {isUploading ? (
+                                <Loader2 className="animate-spin text-[#c48b5e]" />
+                            ) : formData.avatarUrl ? (
                                 <img src={formData.avatarUrl} className="w-full h-full object-cover" />
                             ) : (
                                 <Camera className="text-[#c48b5e] w-8 h-8" />
@@ -314,8 +331,8 @@ export const StudentManager: React.FC<StudentManagerProps> = ({
                          </div>
                          <div className="w-full text-center">
                             <label className="text-xs text-[#c48b5e] font-bold cursor-pointer hover:underline">
-                                Alterar Foto
-                                <input type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
+                                {isUploading ? 'Enviando...' : 'Alterar Foto'}
+                                <input type="file" className="hidden" accept="image/*" onChange={handleFileChange} disabled={isUploading} />
                             </label>
                          </div>
                     </div>
@@ -412,7 +429,7 @@ export const StudentManager: React.FC<StudentManagerProps> = ({
                 </div>
 
                 <div className="pt-2">
-                    <button type="submit" className="w-full bg-[#c48b5e] text-white py-3.5 rounded-xl font-bold hover:bg-[#a0704a] shadow-lg shadow-[#c48b5e]/20 transition-all transform hover:-translate-y-0.5">
+                    <button type="submit" disabled={isUploading} className="w-full bg-[#c48b5e] text-white py-3.5 rounded-xl font-bold hover:bg-[#a0704a] shadow-lg shadow-[#c48b5e]/20 transition-all transform hover:-translate-y-0.5 disabled:opacity-50">
                     {editingId ? 'Salvar Alterações' : 'Confirmar Matrícula'}
                     </button>
                 </div>

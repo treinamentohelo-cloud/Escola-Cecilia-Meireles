@@ -1,3 +1,4 @@
+
 // Configuração da API PHP na Hostinger
 // URL corrigida para o seu domínio na Hostinger
 const API_URL = 'https://lightblue-boar-874757.hostingersite.com/api.php'; 
@@ -6,6 +7,9 @@ const API_URL = 'https://lightblue-boar-874757.hostingersite.com/api.php';
 function mapKeysToSnakeCase(data: any): any {
     if (typeof data !== 'object' || data === null) return data;
     
+    // Se for FormData, não alteramos (tratado no POST)
+    if (data instanceof FormData) return data;
+
     // Se for array, mapeia cada item
     if (Array.isArray(data)) {
         return data.map(mapKeysToSnakeCase);
@@ -116,6 +120,21 @@ export const api = {
     }
   },
 
+  // Upload de Arquivo (Novo)
+  upload: async (formData: FormData) => {
+      try {
+          const response = await fetch(`${API_URL}?action=upload`, {
+              method: 'POST',
+              body: formData // Fetch sets content-type multipart/form-data automatically
+          });
+          if (!response.ok) throw new Error('Upload Error');
+          return await response.json();
+      } catch (error) {
+          console.error("Upload failed", error);
+          throw error;
+      }
+  },
+
   // Atualizar registro
   put: async (table: string, id: string, data: any) => {
     try {
@@ -146,7 +165,7 @@ export const api = {
     }
   },
 
-  // Login específico
+  // Login Admin/Prof
   login: async (email: string, password: string) => {
       try {
           const response = await fetch(`${API_URL}?table=login`, {
@@ -160,6 +179,23 @@ export const api = {
       } catch (error) {
           console.warn("Erro no login API, tentando local:", error);
           return localDB.login(email, password);
+      }
+  },
+
+  // Login Pais (Novo)
+  parentLogin: async (registrationNumber: string, birthDate: string) => {
+      try {
+          const response = await fetch(`${API_URL}?action=parent_login`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ registration_number: registrationNumber, birth_date: birthDate })
+          });
+          if (response.status === 401) return null;
+          if (!response.ok) throw new Error('API Error');
+          return await response.json();
+      } catch (error) {
+          console.error("Parent login error", error);
+          return null;
       }
   }
 };
