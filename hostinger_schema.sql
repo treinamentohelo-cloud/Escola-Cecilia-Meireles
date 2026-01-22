@@ -107,14 +107,56 @@ CREATE TABLE IF NOT EXISTS `class_daily_logs` (
     CONSTRAINT `fk_log_class` FOREIGN KEY (`class_id`) REFERENCES `classes` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 8. TABELA DE CONFIGURAÇÕES (settings)
+-- 8. TABELA DE AVISOS (notices)
+CREATE TABLE IF NOT EXISTS `notices` (
+    `id` VARCHAR(36) NOT NULL,
+    `title` VARCHAR(255) NOT NULL,
+    `content` TEXT NOT NULL,
+    `date` DATE NOT NULL,
+    `type` VARCHAR(50) DEFAULT 'general',
+    `attachment_url` TEXT,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 9. TABELA DE MATERIAIS (materials)
+CREATE TABLE IF NOT EXISTS `materials` (
+    `id` VARCHAR(36) NOT NULL,
+    `title` VARCHAR(255) NOT NULL,
+    `description` TEXT,
+    `category` VARCHAR(50) NOT NULL, /* planning, exam, activity, administrative */
+    `subject_id` VARCHAR(36),
+    `file_url` TEXT NOT NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 10. TABELA DE PLANOS DE AULA (lesson_plans)
+CREATE TABLE IF NOT EXISTS `lesson_plans` (
+    `id` VARCHAR(36) NOT NULL,
+    `title` VARCHAR(255) NOT NULL,
+    `date` DATE NOT NULL,
+    `class_id` VARCHAR(36),
+    `subject_id` VARCHAR(36),
+    `duration` VARCHAR(100),
+    `objectives` TEXT,
+    `content` TEXT,
+    `methodology` TEXT,
+    `resources` TEXT,
+    `evaluation` TEXT,
+    `bncc_skill_ids` JSON,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 11. TABELA DE CONFIGURAÇÕES (settings)
 CREATE TABLE IF NOT EXISTS `settings` (
     `id` VARCHAR(50) NOT NULL,
     `value` TEXT NOT NULL,
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 9. DADOS PADRÃO
+-- 12. DADOS PADRÃO
 INSERT IGNORE INTO `subjects` (`id`, `name`) VALUES 
 ('sub-lp', 'Língua Portuguesa'),
 ('sub-mat', 'Matemática'),

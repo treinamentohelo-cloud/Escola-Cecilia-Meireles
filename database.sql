@@ -100,13 +100,52 @@ CREATE TABLE IF NOT EXISTS public.class_daily_logs (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- 8. TABELA DE CONFIGURAÇÕES (settings)
+-- 8. TABELA DE AVISOS (notices)
+CREATE TABLE IF NOT EXISTS public.notices (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    content TEXT NOT NULL,
+    date TEXT NOT NULL,
+    type TEXT DEFAULT 'general',
+    attachment_url TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 9. TABELA DE MATERIAIS (materials)
+CREATE TABLE IF NOT EXISTS public.materials (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    description TEXT,
+    category TEXT NOT NULL, /* planning, exam, activity, administrative */
+    subject_id TEXT,
+    file_url TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 10. TABELA DE PLANOS DE AULA (lesson_plans)
+CREATE TABLE IF NOT EXISTS public.lesson_plans (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    date TEXT NOT NULL,
+    class_id TEXT REFERENCES public.classes(id),
+    subject_id TEXT,
+    duration TEXT,
+    objectives TEXT,
+    content TEXT,
+    methodology TEXT,
+    resources TEXT,
+    evaluation TEXT,
+    bncc_skill_ids JSONB DEFAULT '[]'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 11. TABELA DE CONFIGURAÇÕES (settings)
 CREATE TABLE IF NOT EXISTS public.settings (
     id TEXT PRIMARY KEY,
     value TEXT NOT NULL
 );
 
--- 9. DADOS PADRÃO: DISCIPLINAS E CONFIGS
+-- 12. DADOS PADRÃO: DISCIPLINAS E CONFIGS
 INSERT INTO public.subjects (id, name)
 VALUES 
   ('sub-lp', 'Língua Portuguesa'),
@@ -122,7 +161,7 @@ ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO public.settings (id, value) VALUES ('school_name', 'Escola Olavo Bilac') ON CONFLICT (id) DO NOTHING;
 
--- 10. POLÍTICAS DE SEGURANÇA (RLS)
+-- 13. POLÍTICAS DE SEGURANÇA (RLS)
 ALTER TABLE public.classes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.students ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.skills ENABLE ROW LEVEL SECURITY;
@@ -130,6 +169,9 @@ ALTER TABLE public.assessments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.subjects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.class_daily_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.notices ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.materials ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.lesson_plans ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.settings ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Enable access for all users" ON public.classes;
@@ -139,6 +181,9 @@ DROP POLICY IF EXISTS "Enable access for all users" ON public.assessments;
 DROP POLICY IF EXISTS "Enable access for all users" ON public.users;
 DROP POLICY IF EXISTS "Enable access for all users" ON public.subjects;
 DROP POLICY IF EXISTS "Enable access for all users" ON public.class_daily_logs;
+DROP POLICY IF EXISTS "Enable access for all users" ON public.notices;
+DROP POLICY IF EXISTS "Enable access for all users" ON public.materials;
+DROP POLICY IF EXISTS "Enable access for all users" ON public.lesson_plans;
 DROP POLICY IF EXISTS "Enable access for all users" ON public.settings;
 
 CREATE POLICY "Enable access for all users" ON public.classes FOR ALL USING (true) WITH CHECK (true);
@@ -148,6 +193,9 @@ CREATE POLICY "Enable access for all users" ON public.assessments FOR ALL USING 
 CREATE POLICY "Enable access for all users" ON public.users FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Enable access for all users" ON public.subjects FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Enable access for all users" ON public.class_daily_logs FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Enable access for all users" ON public.notices FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Enable access for all users" ON public.materials FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Enable access for all users" ON public.lesson_plans FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Enable access for all users" ON public.settings FOR ALL USING (true) WITH CHECK (true);
 
 NOTIFY pgrst, 'reload config';

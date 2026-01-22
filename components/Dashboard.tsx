@@ -12,14 +12,15 @@ import {
   Cell, 
   Legend 
 } from 'recharts';
-import { Users, BookOpen, AlertCircle, CheckCircle, Filter, ChevronUp, ChevronDown, BarChart2 } from 'lucide-react';
-import { Assessment, AssessmentStatus, ClassGroup, Skill, Student, User } from '../types';
+import { Users, BookOpen, AlertCircle, CheckCircle, Filter, ChevronUp, ChevronDown, BarChart2, Megaphone, Calendar } from 'lucide-react';
+import { Assessment, AssessmentStatus, ClassGroup, Skill, Student, User, Notice } from '../types';
 
 interface DashboardProps {
   classes: ClassGroup[];
   students: Student[];
   assessments: Assessment[];
   skills: Skill[];
+  notices?: Notice[];
   currentUser: User | null;
   onNavigateToRemediation: () => void;
 }
@@ -48,6 +49,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   students, 
   assessments, 
   skills, 
+  notices = [],
   currentUser,
   onNavigateToRemediation 
 }) => {
@@ -95,6 +97,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
     name: item.subject,
     taxa: Math.round((item.success / item.total) * 100)
   }));
+
+  const recentNotices = [...notices].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 3);
 
   return (
     <div className="space-y-6">
@@ -175,81 +179,118 @@ export const Dashboard: React.FC<DashboardProps> = ({
         />
       </div>
 
-      {/* Charts (Collapsible) */}
-      {showCharts && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in fade-in slide-in-from-top-4 duration-500">
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-[#eaddcf] transition-all hover:shadow-md">
-            <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold text-[#433422]">Distribuição de Desempenho</h3>
-                {selectedTerm !== 'all' && <span className="text-xs bg-[#eaddcf] text-[#433422] px-2 py-1 rounded font-bold">{selectedTerm}</span>}
-            </div>
-            
-            <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                    <Pie
-                    data={pieData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={80}
-                    paddingAngle={5}
-                    dataKey="value"
-                    >
-                    {pieData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                    </Pie>
-                    <Tooltip />
-                    <Legend verticalAlign="bottom" height={36}/>
-                </PieChart>
-                </ResponsiveContainer>
-            </div>
-            </div>
+      {/* Main Grid: Charts + Notices */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Charts (Left - 2/3 width) */}
+          <div className="lg:col-span-2 space-y-6">
+            {showCharts ? (
+                <>
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-[#eaddcf] transition-all hover:shadow-md">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-lg font-semibold text-[#433422]">Distribuição de Desempenho</h3>
+                            {selectedTerm !== 'all' && <span className="text-xs bg-[#eaddcf] text-[#433422] px-2 py-1 rounded font-bold">{selectedTerm}</span>}
+                        </div>
+                        
+                        <div className="h-64">
+                            <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                                <Pie
+                                data={pieData}
+                                cx="50%"
+                                cy="50%"
+                                innerRadius={60}
+                                outerRadius={80}
+                                paddingAngle={5}
+                                dataKey="value"
+                                >
+                                {pieData.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={entry.color} />
+                                ))}
+                                </Pie>
+                                <Tooltip />
+                                <Legend verticalAlign="bottom" height={36}/>
+                            </PieChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
 
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-[#eaddcf] transition-all hover:shadow-md">
-            <div className="flex justify-between items-start mb-4">
-                <div>
-                    <h3 className="text-lg font-semibold text-[#433422]">Taxa de Sucesso por Disciplina (%)</h3>
-                    <p className="text-xs text-gray-500">Considera "Atingiu" e "Superou"</p>
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-[#eaddcf] transition-all hover:shadow-md">
+                        <div className="flex justify-between items-start mb-4">
+                            <div>
+                                <h3 className="text-lg font-semibold text-[#433422]">Taxa de Sucesso por Disciplina (%)</h3>
+                                <p className="text-xs text-gray-500">Considera "Atingiu" e "Superou"</p>
+                            </div>
+                            {selectedTerm !== 'all' && <span className="text-xs bg-[#eaddcf] text-[#433422] px-2 py-1 rounded font-bold">{selectedTerm}</span>}
+                        </div>
+                        
+                        <div className="h-64">
+                            {barData.length > 0 ? (
+                                <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={barData} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
+                                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E5E7EB" />
+                                    <XAxis type="number" domain={[0, 100]} hide />
+                                    <YAxis dataKey="name" type="category" width={100} tick={{fontSize: 12, fill: '#4B5563'}} />
+                                    <Tooltip 
+                                        cursor={{fill: '#F3F4F6'}} 
+                                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                                    />
+                                    <Bar dataKey="taxa" fill="#c48b5e" radius={[0, 4, 4, 0]} barSize={20} name="Taxa de Sucesso">
+                                        {barData.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={entry.taxa > 70 ? '#10B981' : entry.taxa > 40 ? '#06b6d4' : '#F59E0B'} />
+                                        ))}
+                                    </Bar>
+                                </BarChart>
+                                </ResponsiveContainer>
+                            ) : (
+                            <div className="h-full flex flex-col items-center justify-center text-gray-400 bg-gray-50 rounded-lg">
+                                <BookOpen size={32} className="mb-2 opacity-50" />
+                                <p className="text-sm">Sem dados suficientes neste período</p>
+                            </div>
+                            )}
+                        </div>
+                    </div>
+                </>
+            ) : (
+                <div className="text-center py-4 bg-gray-50 rounded-xl border border-dashed border-gray-200 text-gray-400 text-sm">
+                    Os gráficos estão ocultos.
                 </div>
-                {selectedTerm !== 'all' && <span className="text-xs bg-[#eaddcf] text-[#433422] px-2 py-1 rounded font-bold">{selectedTerm}</span>}
-            </div>
-            
-            <div className="h-64">
-                {barData.length > 0 ? (
-                    <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={barData} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E5E7EB" />
-                        <XAxis type="number" domain={[0, 100]} hide />
-                        <YAxis dataKey="name" type="category" width={100} tick={{fontSize: 12, fill: '#4B5563'}} />
-                        <Tooltip 
-                            cursor={{fill: '#F3F4F6'}} 
-                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
-                        />
-                        <Bar dataKey="taxa" fill="#c48b5e" radius={[0, 4, 4, 0]} barSize={20} name="Taxa de Sucesso">
-                            {barData.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={entry.taxa > 70 ? '#10B981' : entry.taxa > 40 ? '#06b6d4' : '#F59E0B'} />
-                            ))}
-                        </Bar>
-                    </BarChart>
-                    </ResponsiveContainer>
-                ) : (
-                <div className="h-full flex flex-col items-center justify-center text-gray-400 bg-gray-50 rounded-lg">
-                    <BookOpen size={32} className="mb-2 opacity-50" />
-                    <p className="text-sm">Sem dados suficientes neste período</p>
-                </div>
-                )}
-            </div>
-            </div>
-        </div>
-      )}
-      
-      {!showCharts && (
-          <div className="text-center py-4 bg-gray-50 rounded-xl border border-dashed border-gray-200 text-gray-400 text-sm">
-             Os gráficos estão ocultos. Clique em "Mostrar Análises" para visualizar.
+            )}
           </div>
-      )}
+
+          {/* Right Column: Notices Widget */}
+          <div className="lg:col-span-1">
+             <div className="bg-white rounded-xl shadow-sm border border-[#eaddcf] h-full overflow-hidden flex flex-col">
+                 <div className="p-4 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
+                     <h3 className="font-bold text-[#433422] flex items-center gap-2">
+                        <Megaphone size={18} className="text-[#c48b5e]" /> Mural de Avisos
+                     </h3>
+                     <span className="text-xs text-gray-400">{recentNotices.length} Recentes</span>
+                 </div>
+                 <div className="p-4 space-y-4 flex-1 overflow-y-auto max-h-[500px]">
+                     {recentNotices.map(notice => (
+                         <div key={notice.id} className="p-3 rounded-lg border border-gray-100 hover:border-[#c48b5e] hover:bg-[#fcf9f6] transition-all group">
+                             <div className="flex justify-between items-start mb-1">
+                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase ${notice.type === 'urgent' ? 'bg-red-100 text-red-700' : notice.type === 'event' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'}`}>
+                                    {notice.type === 'urgent' ? 'Urgente' : notice.type === 'event' ? 'Evento' : 'Geral'}
+                                </span>
+                                <span className="text-[10px] text-gray-400 flex items-center gap-1">
+                                    <Calendar size={10} /> {new Date(notice.date).toLocaleDateString().slice(0,5)}
+                                </span>
+                             </div>
+                             <h4 className="font-bold text-[#433422] text-sm mb-1">{notice.title}</h4>
+                             <p className="text-xs text-gray-500 line-clamp-2">{notice.content}</p>
+                         </div>
+                     ))}
+                     {recentNotices.length === 0 && (
+                         <div className="text-center py-8 text-gray-400">
+                             <Megaphone size={24} className="mx-auto mb-2 opacity-30" />
+                             <p className="text-xs">Nenhum aviso no momento.</p>
+                         </div>
+                     )}
+                 </div>
+             </div>
+          </div>
+      </div>
     </div>
   );
 };

@@ -68,6 +68,44 @@ export interface ClassDailyLog {
   attendance: Record<string, boolean>; // Map studentId -> isPresent
 }
 
+export interface Notice {
+  id: string;
+  title: string;
+  content: string;
+  date: string;
+  type: 'general' | 'event' | 'urgent';
+  attachmentUrl?: string;
+}
+
+export interface Material {
+  id: string;
+  title: string;
+  description?: string;
+  category: 'planning' | 'exam' | 'activity' | 'administrative';
+  subjectId?: string; // Opcional: vinculado a uma disciplina
+  fileUrl: string;
+  createdAt: string;
+}
+
+export interface LessonPlan {
+  id: string;
+  title: string; // Tema da aula
+  date: string; // Data prevista
+  classId: string;
+  subjectId: string;
+  duration: string; // ex: "2 aulas de 50min"
+  
+  // Campos de Conteúdo
+  objectives: string;
+  content: string;
+  methodology: string;
+  resources: string;
+  evaluation: string;
+  
+  bnccSkillIds: string[]; // IDs das habilidades vinculadas
+  createdAt: string;
+}
+
 export type UserRole = 'admin' | 'coordenador' | 'professor';
 
 export interface User {
@@ -84,4 +122,4 @@ export interface Setting {
     value: string; // valor (ex: 'Escola Modelo')
 }
 
-export type Page = 'dashboard' | 'classes' | 'students' | 'assessments' | 'skills' | 'remediation' | 'student-detail' | 'users' | 'parent-portal';
+export type Page = 'dashboard' | 'classes' | 'students' | 'assessments' | 'skills' | 'remediation' | 'student-detail' | 'users' | 'parent-portal' | 'notices' | 'calendar' | 'reports' | 'library' | 'planner';

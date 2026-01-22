@@ -16,7 +16,12 @@ import {
   ChevronRight,
   Menu,
   Settings,
-  X
+  X,
+  Megaphone,
+  Calendar as CalendarIcon,
+  BarChart3,
+  Folder,
+  Sparkles
 } from 'lucide-react';
 import { api } from './supabaseClient'; // Agora importamos nosso cliente API customizado
 import { Dashboard } from './components/Dashboard';
@@ -29,6 +34,11 @@ import { SkillManager } from './components/SkillManager';
 import { StudentDetail } from './components/StudentDetail';
 import { UserManager } from './components/UserManager';
 import { ParentPortal } from './components/ParentPortal';
+import { NoticeBoard } from './components/NoticeBoard';
+import { AcademicCalendar } from './components/AcademicCalendar';
+import { ReportsCenter } from './components/ReportsCenter';
+import { DigitalLibrary } from './components/DigitalLibrary';
+import { LessonPlanner } from './components/LessonPlanner';
 import { 
   ClassGroup, 
   Student, 
@@ -38,7 +48,10 @@ import {
   Page, 
   User,
   ClassDailyLog,
-  Subject
+  Subject,
+  Notice,
+  Material,
+  LessonPlan
 } from './types';
 
 // --- Mapeadores de Banco de Dados (Snake Case -> Camel Case) ---
@@ -99,6 +112,41 @@ const mapSkillFromDB = (s: any): Skill => ({
     year: s.year || '' 
 });
 
+const mapNoticeFromDB = (n: any): Notice => ({
+  id: n.id,
+  title: n.title,
+  content: n.content,
+  date: n.date,
+  type: n.type || 'general',
+  attachmentUrl: n.attachment_url
+});
+
+const mapMaterialFromDB = (m: any): Material => ({
+  id: m.id,
+  title: m.title,
+  description: m.description,
+  category: m.category,
+  subjectId: m.subject_id,
+  fileUrl: m.file_url,
+  createdAt: m.created_at
+});
+
+const mapLessonPlanFromDB = (p: any): LessonPlan => ({
+  id: p.id,
+  title: p.title,
+  date: p.date,
+  classId: p.class_id,
+  subjectId: p.subject_id,
+  duration: p.duration,
+  objectives: p.objectives,
+  content: p.content,
+  methodology: p.methodology,
+  resources: p.resources,
+  evaluation: p.evaluation,
+  bnccSkillIds: parseJsonField(p.bncc_skill_ids) || [],
+  createdAt: p.created_at
+});
+
 // Helper para tratar campos JSON que podem vir como string do MySQL
 function parseJsonField(field: any) {
     if (typeof field === 'string') {
@@ -134,6 +182,9 @@ export default function App() {
   const [users, setUsers] = useState<User[]>([]);
   const [logs, setLogs] = useState<ClassDailyLog[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [notices, setNotices] = useState<Notice[]>([]);
+  const [materials, setMaterials] = useState<Material[]>([]);
+  const [lessonPlans, setLessonPlans] = useState<LessonPlan[]>([]);
 
   // Configuração Global
   const [schoolName, setSchoolName] = useState('Escola Olavo Bilac');
@@ -169,14 +220,17 @@ export default function App() {
     try {
       setIsLoading(true);
 
-      const [cl, st, sk, ass, us, lg, sb] = await Promise.all([
+      const [cl, st, sk, ass, us, lg, sb, nt, mt, lp] = await Promise.all([
         api.get('classes'),
         api.get('students'),
         api.get('skills'),
         api.get('assessments'),
         api.get('users'),
         api.get('class_daily_logs'),
-        api.get('subjects')
+        api.get('subjects'),
+        api.get('notices'),
+        api.get('materials'),
+        api.get('lesson_plans')
       ]);
 
       setClasses(Array.isArray(cl) ? cl.map(mapClassFromDB) : []);
@@ -185,6 +239,9 @@ export default function App() {
       setAssessments(Array.isArray(ass) ? ass.map(mapAssessmentFromDB) : []);
       setUsers(Array.isArray(us) ? us : []); 
       setLogs(Array.isArray(lg) ? lg.map(mapLogFromDB) : []);
+      setNotices(Array.isArray(nt) ? nt.map(mapNoticeFromDB) : []);
+      setMaterials(Array.isArray(mt) ? mt.map(mapMaterialFromDB) : []);
+      setLessonPlans(Array.isArray(lp) ? lp.map(mapLessonPlanFromDB) : []);
       
       if (Array.isArray(sb) && sb.length > 0) {
         setSubjects(sb.sort((a: any, b: any) => a.name.localeCompare(b.name)));
@@ -268,32 +325,43 @@ export default function App() {
   const handleAddAssessment = async (a: Assessment) => {
     try {
       await api.post('assessments', a);
-
-      // Automação Reforço
-      const student = students.find(s => s.id === a.studentId);
-      if (student) {
-          const now = new Date().toISOString().slice(0, 19).replace('T', ' '); // Format MySQL DATETIME
-          let updateData: any = {};
-
-          if (a.status === AssessmentStatus.ATINGIU || a.status === AssessmentStatus.SUPEROU) {
-              if (student.remediationEntryDate && !student.remediationExitDate) {
-                  updateData = { remediationExitDate: now };
-                  alert(`🎉 Saída automática do Reforço registrada!`);
-              }
-          }
-          else if (a.status === AssessmentStatus.NAO_ATINGIU || a.status === AssessmentStatus.EM_DESENVOLVIMENTO) {
-              if (!student.remediationEntryDate || student.remediationExitDate) {
-                  updateData = { remediationEntryDate: now, remediationExitDate: null };
-                  alert(`⚠️ Aluno adicionado ao Reforço Escolar.`);
-              }
-          }
-
-          if (Object.keys(updateData).length > 0) {
-              await api.put('students', student.id, updateData);
-          }
-      }
+      await checkRemediationStatus(a);
       await fetchData();
     } catch (e: any) { alert('Erro ao salvar: ' + e.message); }
+  };
+
+  const handleUpdateAssessment = async (a: Assessment) => {
+    try {
+        await api.put('assessments', a.id, a);
+        await checkRemediationStatus(a);
+        await fetchData();
+    } catch (e: any) { alert('Erro ao atualizar: ' + e.message); }
+  };
+
+  // Lógica isolada para verificar reforço (usada em Add e Update)
+  const checkRemediationStatus = async (a: Assessment) => {
+    const student = students.find(s => s.id === a.studentId);
+    if (student) {
+        const now = new Date().toISOString().slice(0, 19).replace('T', ' '); // Format MySQL DATETIME
+        let updateData: any = {};
+
+        if (a.status === AssessmentStatus.ATINGIU || a.status === AssessmentStatus.SUPEROU) {
+            if (student.remediationEntryDate && !student.remediationExitDate) {
+                updateData = { remediationExitDate: now };
+                // alert(`🎉 Saída automática do Reforço registrada para ${student.name}!`);
+            }
+        }
+        else if (a.status === AssessmentStatus.NAO_ATINGIU || a.status === AssessmentStatus.EM_DESENVOLVIMENTO) {
+            if (!student.remediationEntryDate || student.remediationExitDate) {
+                updateData = { remediationEntryDate: now, remediationExitDate: null };
+                // alert(`⚠️ Aluno ${student.name} adicionado ao Reforço Escolar.`);
+            }
+        }
+
+        if (Object.keys(updateData).length > 0) {
+            await api.put('students', student.id, updateData);
+        }
+    }
   };
 
   const handleDeleteAssessment = async (id: string) => {
@@ -382,6 +450,30 @@ export default function App() {
       try { await api.delete('class_daily_logs', id); await fetchData(); } catch(e:any) { alert('Erro: ' + e.message); }
   }
 
+  const handleAddNotice = async (n: Notice) => {
+    try { await api.post('notices', n); await fetchData(); } catch(e: any) { alert('Erro: ' + e.message); }
+  };
+
+  const handleDeleteNotice = async (id: string) => {
+    try { await api.delete('notices', id); await fetchData(); } catch(e: any) { alert('Erro: ' + e.message); }
+  };
+
+  const handleAddMaterial = async (m: Material) => {
+    try { await api.post('materials', m); await fetchData(); } catch(e: any) { alert('Erro: ' + e.message); }
+  };
+
+  const handleDeleteMaterial = async (id: string) => {
+    try { await api.delete('materials', id); await fetchData(); } catch(e: any) { alert('Erro: ' + e.message); }
+  };
+
+  const handleAddPlan = async (p: LessonPlan) => {
+    try { await api.post('lesson_plans', p); await fetchData(); } catch(e: any) { alert('Erro: ' + e.message); }
+  };
+
+  const handleDeletePlan = async (id: string) => {
+    try { await api.delete('lesson_plans', id); await fetchData(); } catch(e: any) { alert('Erro: ' + e.message); }
+  };
+
   // Parent Login Helper
   const handleParentLogin = async (reg: string, birth: string) => {
      // Ensure we have fresh data for the portal
@@ -409,6 +501,7 @@ export default function App() {
              assessments={assessments}
              skills={skills}
              classes={classes}
+             notices={notices}
           />
       );
   }
@@ -485,11 +578,16 @@ export default function App() {
         
         <nav className="flex-1 space-y-2 overflow-y-auto no-scrollbar">
           <NavItem icon={<LayoutDashboard size={20} />} label="Dashboard" active={currentPage === 'dashboard'} collapsed={!isSidebarOpen} onClick={() => navigateTo('dashboard')} />
+          <NavItem icon={<CalendarIcon size={20} />} label="Calendário" active={currentPage === 'calendar'} collapsed={!isSidebarOpen} onClick={() => navigateTo('calendar')} />
           <NavItem icon={<School size={20} />} label="Turmas" active={currentPage === 'classes'} collapsed={!isSidebarOpen} onClick={() => navigateTo('classes')} />
+          <NavItem icon={<Sparkles size={20} />} label="Planejador (IA)" active={currentPage === 'planner'} collapsed={!isSidebarOpen} onClick={() => navigateTo('planner')} />
           <NavItem icon={<Users size={20} />} label="Alunos" active={currentPage === 'students'} collapsed={!isSidebarOpen} onClick={() => navigateTo('students')} />
           <NavItem icon={<ClipboardCheck size={20} />} label="Avaliações" active={currentPage === 'assessments'} collapsed={!isSidebarOpen} onClick={() => navigateTo('assessments')} />
           <NavItem icon={<AlertTriangle size={20} />} label="Reforço" active={currentPage === 'remediation'} collapsed={!isSidebarOpen} onClick={() => navigateTo('remediation')} />
+          <NavItem icon={<BarChart3 size={20} />} label="Relatórios" active={currentPage === 'reports'} collapsed={!isSidebarOpen} onClick={() => navigateTo('reports')} />
+          <NavItem icon={<Folder size={20} />} label="Materiais" active={currentPage === 'library'} collapsed={!isSidebarOpen} onClick={() => navigateTo('library')} />
           <NavItem icon={<BookOpen size={20} />} label="BNCC" active={currentPage === 'skills'} collapsed={!isSidebarOpen} onClick={() => navigateTo('skills')} />
+          <NavItem icon={<Megaphone size={20} />} label="Comunicados" active={currentPage === 'notices'} collapsed={!isSidebarOpen} onClick={() => navigateTo('notices')} />
           {currentUser?.role === 'admin' && <NavItem icon={<UserIcon size={20} />} label="Equipe" active={currentPage === 'users'} collapsed={!isSidebarOpen} onClick={() => navigateTo('users')} />}
         </nav>
 
@@ -544,7 +642,7 @@ export default function App() {
       </aside>
 
       <main className="flex-1 overflow-auto p-4 md:p-10 transition-all pt-16 md:pt-10">
-        {currentPage === 'dashboard' && <Dashboard classes={classes} students={students} assessments={assessments} skills={skills} currentUser={currentUser} onNavigateToRemediation={() => setCurrentPage('remediation')} />}
+        {currentPage === 'dashboard' && <Dashboard classes={classes} students={students} assessments={assessments} skills={skills} notices={notices} currentUser={currentUser} onNavigateToRemediation={() => setCurrentPage('remediation')} />}
         
         {currentPage === 'classes' && <ClassList 
           classes={classes} 
@@ -585,7 +683,8 @@ export default function App() {
             skills={skills} 
             logs={logs}
             currentUser={currentUser} 
-            onAddAssessment={handleAddAssessment} 
+            onAddAssessment={handleAddAssessment}
+            onUpdateAssessment={handleUpdateAssessment}
             onDeleteAssessment={handleDeleteAssessment} 
         />}
         {currentPage === 'remediation' && <RemediationList assessments={assessments} students={students} skills={skills} classes={classes} users={users} logs={logs} currentUser={currentUser} onSelectStudent={(id) => { setSelectedStudentId(id); setCurrentPage('student-detail'); }} onAddClass={handleAddClass} onDeleteClass={handleDeleteClass} onUpdateStudent={handleUpdateStudent} onAddLog={handleAddLog} onDeleteLog={handleDeleteLog} />}
@@ -611,6 +710,11 @@ export default function App() {
             onBack={() => setCurrentPage('students')} 
         />}
         {currentPage === 'users' && <UserManager users={users} currentUser={currentUser} onAddUser={handleAddUser} onUpdateUser={handleUpdateUser} onDeleteUser={handleDeleteUser} />}
+        {currentPage === 'notices' && <NoticeBoard notices={notices} currentUser={currentUser} onAddNotice={handleAddNotice} onDeleteNotice={handleDeleteNotice} />}
+        {currentPage === 'calendar' && <AcademicCalendar notices={notices} assessments={assessments} classes={classes} skills={skills} />}
+        {currentPage === 'reports' && <ReportsCenter classes={classes} students={students} assessments={assessments} skills={skills} subjects={subjects} logs={logs} />}
+        {currentPage === 'library' && <DigitalLibrary materials={materials} subjects={subjects} currentUser={currentUser} onAddMaterial={handleAddMaterial} onDeleteMaterial={handleDeleteMaterial} />}
+        {currentPage === 'planner' && <LessonPlanner plans={lessonPlans} classes={classes} subjects={subjects} skills={skills} currentUser={currentUser} onAddPlan={handleAddPlan} onDeletePlan={handleDeletePlan} />}
       </main>
 
       {/* Settings Modal */}
