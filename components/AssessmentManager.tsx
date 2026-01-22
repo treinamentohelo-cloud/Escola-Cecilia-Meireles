@@ -146,7 +146,7 @@ export const AssessmentManager: React.FC<AssessmentManagerProps> = ({
   const handleBatchSave = async () => {
       setIsSavingBatch(true);
       try {
-          const promises = Object.values(batchData).map(entry => {
+          const promises = Object.values(batchData).map((entry: BatchEntry) => {
               const payload: Assessment = {
                   id: entry.existingId || generateId(),
                   studentId: entry.studentId,
@@ -402,7 +402,7 @@ export const AssessmentManager: React.FC<AssessmentManagerProps> = ({
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
-                                {Object.values(batchData).map((entry) => {
+                                {Object.values(batchData).map((entry: BatchEntry) => {
                                     const student = students.find(s => s.id === entry.studentId);
                                     if (!student) return null;
 

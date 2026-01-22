@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Search, Edit2, Trash2, Shield, User as UserIcon, Key, Eye, EyeOff, AlertCircle, X, Users, CheckCircle, XCircle, Info } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, Shield, User as UserIcon, Key, Eye, EyeOff, X, Users, CheckCircle, XCircle } from 'lucide-react';
 import { User, UserRole } from '../types';
 
 interface UserManagerProps {
@@ -141,17 +141,6 @@ export const UserManager: React.FC<UserManagerProps> = ({
              
              <form onSubmit={handleSubmit} className="p-8 space-y-5">
                 
-                {/* Aviso sobre e-mails */}
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex gap-3 text-sm text-amber-900 mb-2">
-                    <Info size={24} className="shrink-0 text-amber-600" />
-                    <div>
-                        <p className="font-bold mb-1">Atenção: O sistema não envia e-mails automáticos.</p>
-                        <p className="text-amber-800">
-                            Após cadastrar, você deve entregar o <strong>E-mail</strong> e a <strong>Senha</strong> definidos abaixo diretamente ao professor/usuário.
-                        </p>
-                    </div>
-                </div>
-
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5">Nome Completo</label>
                   <input 

@@ -120,7 +120,7 @@ export const StudentDetail: React.FC<StudentDetailProps> = ({
 
       if (termAssessments.length === 0) return null;
 
-      const total = termAssessments.length;
+      const total = total = termAssessments.length;
       const success = termAssessments.filter(a => a.status === AssessmentStatus.ATINGIU || a.status === AssessmentStatus.SUPEROU).length;
       
       let cellStatus: 'success' | 'danger' | 'warning' | 'neutral' = 'neutral';
@@ -217,12 +217,11 @@ export const StudentDetail: React.FC<StudentDetailProps> = ({
     }
   };
   
-  // Use any to avoid "unknown is not assignable to string" errors in strict mode
-  const formatDate = (dateString?: any) => dateString ? new Date(dateString).toLocaleDateString('pt-BR') : '-';
-  const formatDateTime = (dateString?: any) => {
+  const formatDate = (dateString?: string) => dateString ? new Date(dateString).toLocaleDateString('pt-BR') : '-';
+  const formatDateTime = (dateString: string) => {
       if (!dateString) return '-';
       const d = new Date(dateString);
-      return (typeof dateString === 'string' && dateString.includes('T'))
+      return (dateString.includes('T'))
          ? d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})
          : d.toLocaleDateString('pt-BR');
   };
