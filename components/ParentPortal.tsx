@@ -87,7 +87,7 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({
                             skills={skills}
                             assessments={assessments}
                             classes={classes}
-                            // onAddAssessment removed to hide the button
+                            onAddAssessment={() => {}} // Disabled for parents
                             onBack={() => {}} // Disabled
                         />
                     ) : (
