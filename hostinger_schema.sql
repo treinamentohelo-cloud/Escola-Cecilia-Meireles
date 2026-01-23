@@ -168,7 +168,10 @@ INSERT IGNORE INTO `subjects` (`id`, `name`) VALUES
 ('sub-edfis', 'Educação Física'),
 ('sub-ensrel', 'Ensino Religioso');
 
-INSERT IGNORE INTO `settings` (`id`, `value`) VALUES ('school_name', 'Escola Olavo Bilac');
+-- GARANTIA DO NOME DA ESCOLA (ON DUPLICATE KEY UPDATE para garantir que o valor exista)
+INSERT INTO `settings` (`id`, `value`) 
+VALUES ('school_name', 'Escola Olavo Bilac') 
+ON DUPLICATE KEY UPDATE `value`=`value`;
 
 -- Cria um admin padrão caso a tabela esteja vazia (Senha: 123456)
 INSERT IGNORE INTO `users` (`id`, `name`, `email`, `password`, `role`, `status`) 

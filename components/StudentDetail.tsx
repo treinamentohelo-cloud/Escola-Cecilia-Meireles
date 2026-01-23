@@ -120,7 +120,7 @@ export const StudentDetail: React.FC<StudentDetailProps> = ({
 
       if (termAssessments.length === 0) return null;
 
-      const total = total = termAssessments.length;
+      const total = termAssessments.length;
       const success = termAssessments.filter(a => a.status === AssessmentStatus.ATINGIU || a.status === AssessmentStatus.SUPEROU).length;
       
       let cellStatus: 'success' | 'danger' | 'warning' | 'neutral' = 'neutral';

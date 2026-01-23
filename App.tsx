@@ -190,13 +190,14 @@ export default function App() {
   const [schoolName, setSchoolName] = useState('Escola Olavo Bilac');
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [tempSchoolName, setTempSchoolName] = useState('');
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
 
   // Check connection and fetch public settings on mount
   useEffect(() => {
     const init = async () => {
        const status = await api.checkConnection();
        setApiStatus(status);
-       fetchSettings();
+       if (status) fetchSettings();
     };
     init();
   }, []);
@@ -211,7 +212,12 @@ export default function App() {
           const settings = await api.get('settings');
           if (Array.isArray(settings)) {
               const nameSetting = settings.find((s: any) => s.id === 'school_name');
-              if (nameSetting) setSchoolName(nameSetting.value);
+              if (nameSetting) {
+                  setSchoolName(nameSetting.value);
+                  setSettingsLoaded(true);
+              } else {
+                  setSettingsLoaded(false); // Indica que precisamos criar
+              }
           }
       } catch (err) { console.error('Erro ao buscar configurações', err); }
   }
@@ -310,11 +316,17 @@ export default function App() {
   const handleSaveSettings = async (e: React.FormEvent) => {
       e.preventDefault();
       try {
-          // O put/update do SupabaseClient/API usa a chave primária
-          await api.put('settings', 'school_name', { id: 'school_name', value: tempSchoolName });
+          if (settingsLoaded) {
+              // Se já existe, atualiza
+              await api.put('settings', 'school_name', { id: 'school_name', value: tempSchoolName });
+          } else {
+              // Se não existe, cria (POST)
+              await api.post('settings', { id: 'school_name', value: tempSchoolName });
+              setSettingsLoaded(true);
+          }
           setSchoolName(tempSchoolName);
           setIsSettingsModalOpen(false);
-          alert('Configurações salvas com sucesso!');
+          alert('Nome da escola salvo com sucesso!');
       } catch (e: any) {
           alert('Erro ao salvar configurações: ' + e.message);
       }
@@ -597,9 +609,9 @@ export default function App() {
               <div className={`flex items-center justify-between mb-4 px-2 py-1.5 rounded-lg text-xs font-bold border ${apiStatus ? 'bg-green-100 text-green-700 border-green-200' : 'bg-red-100 text-red-700 border-red-200'}`}>
                  <span className="flex items-center gap-1.5">
                     {apiStatus ? <Wifi size={12}/> : <WifiOff size={12}/>}
-                    Sistema Online
+                    Sistema {apiStatus ? 'Online' : 'Offline'}
                  </span>
-                 <span className="w-2 h-2 rounded-full bg-current animate-pulse"></span>
+                 <span className={`w-2 h-2 rounded-full animate-pulse ${apiStatus ? 'bg-green-500' : 'bg-red-500'}`}></span>
               </div>
             ) : (
                <div className={`hidden md:flex justify-center mb-4`}>
