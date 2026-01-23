@@ -11,6 +11,7 @@ interface ParentPortalProps {
     skills: Skill[];
     classes: ClassGroup[];
     notices?: Notice[]; // Added notices prop
+    logoUrl?: string | null;
 }
 
 export const ParentPortal: React.FC<ParentPortalProps> = ({
@@ -19,7 +20,8 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({
     assessments,
     skills,
     classes,
-    notices = []
+    notices = [],
+    logoUrl
 }) => {
     const [student, setStudent] = useState<Student | null>(null);
     const [regNumber, setRegNumber] = useState('');
@@ -56,7 +58,15 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({
                 <div className="max-w-5xl mx-auto">
                     <div className="flex justify-between items-center mb-6">
                          <div className="flex items-center gap-3">
-                             <div className="bg-[#c48b5e] p-2 rounded-xl text-white"><GraduationCap /></div>
+                             <div className="p-2 rounded-xl text-white">
+                                {logoUrl ? (
+                                    <img src={logoUrl} alt="Logo" className="w-10 h-10 object-contain" />
+                                ) : (
+                                    <div className="bg-[#c48b5e] p-2 rounded-xl">
+                                        <GraduationCap />
+                                    </div>
+                                )}
+                             </div>
                              <h1 className="text-2xl font-bold text-[#433422]">Portal do Responsável</h1>
                          </div>
                          <button onClick={handleLogout} className="text-gray-500 hover:text-[#c48b5e] font-medium flex items-center gap-2">
@@ -132,8 +142,14 @@ export const ParentPortal: React.FC<ParentPortalProps> = ({
                 <button onClick={onBack} className="absolute top-4 left-4 text-gray-400 hover:text-[#c48b5e]"><ArrowLeft size={20}/></button>
                 
                 <div className="text-center mb-8">
-                    <div className="inline-flex items-center justify-center p-4 bg-[#c48b5e] rounded-full shadow-lg shadow-[#c48b5e]/20 mb-4">
-                         <User className="text-white" size={32} />
+                    <div className="inline-flex items-center justify-center mb-4">
+                         {logoUrl ? (
+                            <img src={logoUrl} alt="Logo" className="w-16 h-16 object-contain" />
+                         ) : (
+                             <div className="p-4 bg-[#c48b5e] rounded-full shadow-lg shadow-[#c48b5e]/20">
+                                 <User className="text-white" size={32} />
+                             </div>
+                         )}
                     </div>
                     <h1 className="text-2xl font-bold text-[#433422]">Acesso do Responsável</h1>
                     <p className="text-gray-500 text-sm mt-2">Consulte o desempenho escolar do seu filho(a).</p>

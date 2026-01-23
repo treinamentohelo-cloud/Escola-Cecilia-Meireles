@@ -5,9 +5,10 @@ interface LoginProps {
   onLogin: (email: string, password: string) => Promise<boolean>;
   schoolName: string;
   onParentMode: () => void;
+  logoUrl: string | null;
 }
 
-export const Login: React.FC<LoginProps> = ({ onLogin, schoolName, onParentMode }) => {
+export const Login: React.FC<LoginProps> = ({ onLogin, schoolName, onParentMode, logoUrl }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -53,8 +54,14 @@ export const Login: React.FC<LoginProps> = ({ onLogin, schoolName, onParentMode 
 
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-10 relative z-10 animate-in fade-in zoom-in duration-300 border border-[#eaddcf]">
         <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center p-5 bg-[#c48b5e] rounded-2xl shadow-lg shadow-[#c48b5e]/20 mb-6 transform hover:scale-105 transition-transform duration-300">
-            <GraduationCap className="text-white" size={48} strokeWidth={1.5} />
+          <div className="inline-flex items-center justify-center mb-6 transform hover:scale-105 transition-transform duration-300">
+            {logoUrl ? (
+                <img src={logoUrl} alt="Logo da Escola" className="w-24 h-24 object-contain" />
+            ) : (
+                <div className="p-5 bg-[#c48b5e] rounded-2xl shadow-lg shadow-[#c48b5e]/20">
+                    <GraduationCap className="text-white" size={48} strokeWidth={1.5} />
+                </div>
+            )}
           </div>
           <h1 className="text-3xl font-extrabold text-[#433422] tracking-tight uppercase">
              {mainName} <span className="text-[#c48b5e]">{highlightName}</span>

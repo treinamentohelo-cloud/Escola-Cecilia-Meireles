@@ -21,7 +21,10 @@ import {
   Calendar as CalendarIcon,
   BarChart3,
   Folder,
-  Sparkles
+  Sparkles,
+  Camera,
+  Upload,
+  Trash2
 } from 'lucide-react';
 import { api } from './supabaseClient'; // Agora importamos nosso cliente API customizado
 import { Dashboard } from './components/Dashboard';
@@ -188,8 +191,12 @@ export default function App() {
 
   // Configuração Global
   const [schoolName, setSchoolName] = useState('Escola Olavo Bilac');
+  const [schoolLogo, setSchoolLogo] = useState<string | null>(null);
+  
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [tempSchoolName, setTempSchoolName] = useState('');
+  const [tempSchoolLogo, setTempSchoolLogo] = useState<string | null>(null);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
 
   // Check connection and fetch public settings on mount
@@ -202,7 +209,7 @@ export default function App() {
     init();
   }, []);
 
-  // Update document title
+  // Update document title and favicon if needed
   useEffect(() => {
       document.title = schoolName;
   }, [schoolName]);
@@ -212,12 +219,15 @@ export default function App() {
           const settings = await api.get('settings');
           if (Array.isArray(settings)) {
               const nameSetting = settings.find((s: any) => s.id === 'school_name');
+              const logoSetting = settings.find((s: any) => s.id === 'school_logo');
+              
               if (nameSetting) {
                   setSchoolName(nameSetting.value);
-                  setSettingsLoaded(true);
-              } else {
-                  setSettingsLoaded(false); // Indica que precisamos criar
               }
+              if (logoSetting) {
+                  setSchoolLogo(logoSetting.value);
+              }
+              setSettingsLoaded(true);
           }
       } catch (err) { console.error('Erro ao buscar configurações', err); }
   }
@@ -313,20 +323,51 @@ export default function App() {
     setCurrentPage('dashboard');
   };
 
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) {
+          setIsUploadingLogo(true);
+          try {
+              const formData = new FormData();
+              formData.append('file', file);
+              const result = await api.upload(formData);
+              if (result.success && result.url) {
+                  setTempSchoolLogo(result.url);
+              } else {
+                  alert('Erro ao fazer upload da imagem.');
+              }
+          } catch (err) {
+              alert('Erro de conexão no upload.');
+          } finally {
+              setIsUploadingLogo(false);
+          }
+      }
+  };
+
   const handleSaveSettings = async (e: React.FormEvent) => {
       e.preventDefault();
       try {
+          // Salva Nome da Escola
           if (settingsLoaded) {
-              // Se já existe, atualiza
               await api.put('settings', 'school_name', { id: 'school_name', value: tempSchoolName });
           } else {
-              // Se não existe, cria (POST)
               await api.post('settings', { id: 'school_name', value: tempSchoolName });
-              setSettingsLoaded(true);
           }
+          
+          // Salva Logo da Escola
+          if (tempSchoolLogo) {
+              await api.post('settings', { id: 'school_logo', value: tempSchoolLogo });
+              setSchoolLogo(tempSchoolLogo);
+          } else if (tempSchoolLogo === '') {
+              // Se foi removido (string vazia)
+              await api.post('settings', { id: 'school_logo', value: '' });
+              setSchoolLogo(null);
+          }
+
           setSchoolName(tempSchoolName);
+          setSettingsLoaded(true);
           setIsSettingsModalOpen(false);
-          alert('Nome da escola salvo com sucesso!');
+          alert('Configurações salvas com sucesso!');
       } catch (e: any) {
           alert('Erro ao salvar configurações: ' + e.message);
       }
@@ -514,6 +555,7 @@ export default function App() {
              skills={skills}
              classes={classes}
              notices={notices}
+             logoUrl={schoolLogo}
           />
       );
   }
@@ -523,6 +565,7 @@ export default function App() {
         onLogin={handleLogin} 
         schoolName={schoolName} 
         onParentMode={() => setIsParentMode(true)} 
+        logoUrl={schoolLogo}
     />
   );
   
@@ -539,7 +582,15 @@ export default function App() {
       {/* Mobile Header */}
       <div className="md:hidden fixed top-0 left-0 w-full bg-white z-40 border-b border-[#eaddcf] px-4 py-3 flex items-center justify-between shadow-sm">
           <div className="flex items-center gap-2">
-             <div className="bg-[#c48b5e] p-1.5 rounded-lg text-white"><GraduationCap size={20} /></div>
+             <div className="p-1.5 rounded-lg text-white">
+                {schoolLogo ? (
+                    <img src={schoolLogo} alt="Logo" className="w-8 h-8 object-contain" />
+                ) : (
+                    <div className="bg-[#c48b5e] p-1 rounded-lg">
+                        <GraduationCap size={20} />
+                    </div>
+                )}
+             </div>
              <span className="font-bold text-[#433422] truncate max-w-[200px]">{schoolName}</span>
           </div>
           <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="text-[#8c7e72] p-2">
@@ -565,7 +616,13 @@ export default function App() {
       `}>
         <div className="hidden md:flex items-center justify-between mb-8 px-1">
             <div className={`flex items-center gap-3 ${!isSidebarOpen && 'justify-center w-full'}`}>
-                <div className="bg-[#c48b5e] p-2 rounded-xl text-white shadow-md shadow-[#c48b5e]/20 shrink-0"><GraduationCap size={24} /></div>
+                <div className={`shrink-0 ${!schoolLogo && 'bg-[#c48b5e] p-2 rounded-xl text-white shadow-md shadow-[#c48b5e]/20'}`}>
+                    {schoolLogo ? (
+                        <img src={schoolLogo} alt="Logo" className="w-10 h-10 object-contain" />
+                    ) : (
+                        <GraduationCap size={24} />
+                    )}
+                </div>
                 {isSidebarOpen && (
                   <h1 className="text-lg font-extrabold tracking-tight uppercase text-[#433422] leading-tight">
                     {schoolMain} <span className="text-[#c48b5e] block">{schoolHighlight}</span>
@@ -635,7 +692,7 @@ export default function App() {
             {/* Admin Settings Button */}
             {currentUser?.role === 'admin' && (
                 <button
-                    onClick={() => { setTempSchoolName(schoolName); setIsSettingsModalOpen(true); setIsMobileMenuOpen(false); }}
+                    onClick={() => { setTempSchoolName(schoolName); setTempSchoolLogo(schoolLogo); setIsSettingsModalOpen(true); setIsMobileMenuOpen(false); }}
                     className={`w-full flex items-center ${isSidebarOpen ? 'gap-2 px-2' : 'justify-center'} text-[#8c7e72] hover:text-[#c48b5e] p-2 transition-colors text-sm font-bold mb-1`}
                     title="Configurações da Escola"
                 >
@@ -750,6 +807,31 @@ export default function App() {
                             onChange={(e) => setTempSchoolName(e.target.value)} 
                         />
                     </div>
+
+                    <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1.5 ml-1">Logo da Escola</label>
+                        <div className="flex flex-col items-center gap-3">
+                             <div className="w-24 h-24 bg-[#fcf9f6] rounded-full flex items-center justify-center border-2 border-dashed border-[#c48b5e]/30 overflow-hidden relative group">
+                                {isUploadingLogo ? (
+                                    <Loader2 className="animate-spin text-[#c48b5e]" />
+                                ) : tempSchoolLogo ? (
+                                    <img src={tempSchoolLogo} className="w-full h-full object-contain p-2" alt="Preview" />
+                                ) : (
+                                    <Camera className="text-[#c48b5e] w-8 h-8" />
+                                )}
+                                <label className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity">
+                                    <Upload className="text-white" size={20} />
+                                    <input type="file" className="hidden" accept="image/*" onChange={handleLogoUpload} />
+                                </label>
+                             </div>
+                             {tempSchoolLogo && (
+                                <button type="button" onClick={() => setTempSchoolLogo('')} className="text-xs text-red-500 hover:underline flex items-center gap-1">
+                                    <Trash2 size={12} /> Remover Logo
+                                </button>
+                             )}
+                        </div>
+                    </div>
+
                     <div className="pt-2 flex gap-3">
                         <button type="button" onClick={() => setIsSettingsModalOpen(false)} className="flex-1 px-4 py-3 border border-gray-200 rounded-xl text-gray-600 font-medium hover:bg-gray-50">Cancelar</button>
                         <button type="submit" className="flex-1 px-4 py-3 bg-[#c48b5e] text-white rounded-xl font-bold hover:bg-[#a0704a] shadow-lg">Salvar</button>
