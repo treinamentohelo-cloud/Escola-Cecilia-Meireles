@@ -24,9 +24,10 @@ import {
   Sparkles,
   Camera,
   Upload,
-  Trash2
+  Trash2,
+  Globe
 } from 'lucide-react';
-import { api } from './supabaseClient'; // Agora importamos nosso cliente API customizado
+import { api, updateApiConfig, getApiUrl } from './supabaseClient'; // Import new functions
 import { Dashboard } from './components/Dashboard';
 import { ClassList } from './components/ClassList';
 import { StudentManager } from './components/StudentManager';
@@ -196,6 +197,7 @@ export default function App() {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [tempSchoolName, setTempSchoolName] = useState('');
   const [tempSchoolLogo, setTempSchoolLogo] = useState<string | null>(null);
+  const [tempApiUrl, setTempApiUrl] = useState('');
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
 
@@ -347,6 +349,17 @@ export default function App() {
   const handleSaveSettings = async (e: React.FormEvent) => {
       e.preventDefault();
       try {
+          // Atualiza a URL da API
+          if (tempApiUrl) {
+              updateApiConfig(tempApiUrl);
+              // Verifica a conexão imediatamente
+              const isOnline = await api.checkConnection();
+              setApiStatus(isOnline);
+              if (!isOnline) {
+                  alert("A URL da API foi salva, mas não conseguimos conectar. Verifique se o endereço está correto e se o arquivo api.php está no servidor.");
+              }
+          }
+
           // Salva Nome da Escola
           if (settingsLoaded) {
               await api.put('settings', 'school_name', { id: 'school_name', value: tempSchoolName });
@@ -367,9 +380,13 @@ export default function App() {
           setSchoolName(tempSchoolName);
           setSettingsLoaded(true);
           setIsSettingsModalOpen(false);
+          
+          // Se a conexão voltou, recarrega os dados
+          if (apiStatus) fetchData();
+
           alert('Configurações salvas com sucesso!');
       } catch (e: any) {
-          alert('Erro ao salvar configurações: ' + e.message);
+          alert('Erro ao salvar configurações (verifique sua conexão com a API): ' + e.message);
       }
   };
 
@@ -692,7 +709,13 @@ export default function App() {
             {/* Admin Settings Button */}
             {currentUser?.role === 'admin' && (
                 <button
-                    onClick={() => { setTempSchoolName(schoolName); setTempSchoolLogo(schoolLogo); setIsSettingsModalOpen(true); setIsMobileMenuOpen(false); }}
+                    onClick={() => { 
+                        setTempSchoolName(schoolName); 
+                        setTempSchoolLogo(schoolLogo); 
+                        setTempApiUrl(getApiUrl());
+                        setIsSettingsModalOpen(true); 
+                        setIsMobileMenuOpen(false); 
+                    }}
                     className={`w-full flex items-center ${isSidebarOpen ? 'gap-2 px-2' : 'justify-center'} text-[#8c7e72] hover:text-[#c48b5e] p-2 transition-colors text-sm font-bold mb-1`}
                     title="Configurações da Escola"
                 >
@@ -797,6 +820,24 @@ export default function App() {
                     <button onClick={() => setIsSettingsModalOpen(false)} className="text-white/80 hover:text-white transition-colors"><X size={24} /></button>
                 </div>
                 <form onSubmit={handleSaveSettings} className="p-6 space-y-4">
+                    {/* Input API URL */}
+                    <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1.5 ml-1">URL da API (Conexão)</label>
+                        <div className="relative">
+                            <Globe className="absolute left-3 top-3.5 text-gray-400" size={18} />
+                            <input 
+                                required
+                                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white placeholder-gray-400" 
+                                placeholder="https://seu-site.com/api.php" 
+                                value={tempApiUrl} 
+                                onChange={(e) => setTempApiUrl(e.target.value)} 
+                            />
+                        </div>
+                        <p className="text-[10px] text-gray-500 mt-1 ml-1">
+                            Link para o arquivo <code>api.php</code> no seu servidor.
+                        </p>
+                    </div>
+
                     <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-1.5 ml-1">Nome da Escola</label>
                         <input 

@@ -1,7 +1,16 @@
 
 // Configuração da API PHP na Hostinger
-// URL corrigida para o seu domínio na Hostinger
-const API_URL = 'https://lightblue-boar-874757.hostingersite.com/api.php'; 
+// Tenta ler do LocalStorage primeiro, senão usa um valor padrão
+let API_URL = localStorage.getItem('school_app_api_url') || 'https://seu-dominio.hostingersite.com/api.php'; 
+
+export const updateApiConfig = (url: string) => {
+    // Remove barras no final para padronizar e espaços
+    const cleanUrl = url.trim().replace(/\/$/, "");
+    API_URL = cleanUrl;
+    localStorage.setItem('school_app_api_url', cleanUrl);
+};
+
+export const getApiUrl = () => API_URL;
 
 // Helper para converter camelCase (React) para snake_case (Banco de Dados)
 function mapKeysToSnakeCase(data: any): any {
@@ -82,12 +91,18 @@ const localDB = {
 export const api = {
   // Check connection status
   checkConnection: async () => {
+    // Evita tentar conectar se a URL for a padrão (placeholder)
+    if (API_URL.includes('seu-dominio.hostingersite.com')) {
+        return false;
+    }
+
     try {
       const response = await fetch(`${API_URL}?table=health`);
       if (!response.ok) return false;
       const data = await response.json();
       return data.status === 'online';
     } catch (e) {
+      console.warn("Modo Offline ativado (API inacessível).");
       return false;
     }
   },
@@ -95,6 +110,8 @@ export const api = {
   // Buscar todos os registros de uma tabela
   get: async (table: string) => {
     try {
+      if (API_URL.includes('seu-dominio.hostingersite.com')) throw new Error('URL não configurada');
+      
       const response = await fetch(`${API_URL}?table=${table}`);
       if (!response.ok) throw new Error('Network response was not ok');
       return await response.json();
@@ -177,7 +194,7 @@ export const api = {
           if (!response.ok) throw new Error('API Error');
           return await response.json();
       } catch (error) {
-          console.warn("Erro no login API, tentando local:", error);
+          console.warn("Erro no login API, tentando local.");
           return localDB.login(email, password);
       }
   },
