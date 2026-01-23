@@ -1,7 +1,13 @@
 
-// Configuração da API PHP na Hostinger
-// Tenta ler do LocalStorage primeiro, senão usa um valor padrão
-let API_URL = localStorage.getItem('school_app_api_url') || 'https://seu-dominio.hostingersite.com/api.php'; 
+// --- CONFIGURAÇÃO PRINCIPAL ---
+// Substitua a URL abaixo pela URL real do seu arquivo api.php na Hostinger.
+// Exemplo: 'https://minha-escola.hostingersite.com/api.php'
+// AO PREENCHER ISTO, O SISTEMA PARARÁ DE ZERAR OS DADOS.
+const FIXED_API_URL = 'https://lightblue-boar-874757.hostingersite.com/api.php'; 
+
+// Configuração da API
+// Prioridade: 1. URL Fixa no código (Recomendado para Produção) -> 2. LocalStorage -> 3. Placeholder
+let API_URL = FIXED_API_URL || localStorage.getItem('school_app_api_url') || 'https://seu-dominio.hostingersite.com/api.php'; 
 
 export const updateApiConfig = (url: string) => {
     // Remove barras no final para padronizar e espaços
@@ -91,8 +97,8 @@ const localDB = {
 export const api = {
   // Check connection status
   checkConnection: async () => {
-    // Evita tentar conectar se a URL for a padrão (placeholder)
-    if (API_URL.includes('seu-dominio.hostingersite.com')) {
+    // Evita tentar conectar se a URL for a padrão (placeholder) e não houver fixa
+    if (!FIXED_API_URL && API_URL.includes('seu-dominio.hostingersite.com')) {
         return false;
     }
 
@@ -110,13 +116,13 @@ export const api = {
   // Buscar todos os registros de uma tabela
   get: async (table: string) => {
     try {
-      if (API_URL.includes('seu-dominio.hostingersite.com')) throw new Error('URL não configurada');
+      if (!FIXED_API_URL && API_URL.includes('seu-dominio.hostingersite.com')) throw new Error('URL não configurada');
       
       const response = await fetch(`${API_URL}?table=${table}`);
       if (!response.ok) throw new Error('Network response was not ok');
       return await response.json();
     } catch (error) {
-      console.warn(`API indisponível (${table}). Usando dados locais.`);
+      console.warn(`[OFFLINE] Falha ao conectar na API (${table}). Usando LocalStorage (Dados temporários).`);
       return localDB.get(table);
     }
   },
@@ -132,7 +138,7 @@ export const api = {
       if (!response.ok) throw new Error('API Error');
       return await response.json();
     } catch (error) {
-      console.warn(`API indisponível. Salvando ${table} localmente.`);
+      console.warn(`[OFFLINE] Salvando ${table} localmente.`);
       return localDB.insert(table, data);
     }
   },
@@ -163,7 +169,7 @@ export const api = {
       if (!response.ok) throw new Error('API Error');
       return await response.json();
     } catch (error) {
-      console.warn(`API indisponível. Atualizando ${table} localmente.`);
+      console.warn(`[OFFLINE] Atualizando ${table} localmente.`);
       return localDB.update(table, id, data);
     }
   },
@@ -177,7 +183,7 @@ export const api = {
       if (!response.ok) throw new Error('API Error');
       return await response.json();
     } catch (error) {
-       console.warn(`API indisponível. Removendo de ${table} localmente.`);
+       console.warn(`[OFFLINE] Removendo de ${table} localmente.`);
        return localDB.delete(table, id);
     }
   },

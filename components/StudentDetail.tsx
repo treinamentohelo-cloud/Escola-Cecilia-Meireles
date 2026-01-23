@@ -251,7 +251,7 @@ export const StudentDetail: React.FC<StudentDetailProps> = ({
             {/* Destaque por Superação */}
             {isDestaque && (
                 <div className="absolute top-0 right-0 bg-yellow-400 text-yellow-900 text-[10px] font-bold px-4 py-1 rounded-bl-xl shadow-sm flex items-center gap-1">
-                    <Trophy size={12} fill="currentColor" /> DESTAQUE ACADÊMICO
+                    <Trophy size={12} className="fill-current" /> DESTAQUE ACADÊMICO
                 </div>
             )}
             
@@ -262,7 +262,7 @@ export const StudentDetail: React.FC<StudentDetailProps> = ({
             <div>
                 <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
                     {student.name} 
-                    {isDestaque && <Star size={20} className="text-yellow-400 fill-yellow-400" />}
+                    {isDestaque && <Star size={20} className="text-yellow-400 fill-current" />}
                 </h1>
                 <div className="flex flex-wrap gap-2 items-center text-sm text-gray-500 mt-1">
                     <span className="flex items-center gap-1"><UserIcon size={14} /> Matrícula: {student.registrationNumber || 'N/A'}</span>
@@ -343,7 +343,7 @@ export const StudentDetail: React.FC<StudentDetailProps> = ({
                         <div className="w-1 h-4 bg-[#c48b5e] rounded-full"></div> {subject}
                         </div>
                         <div className="divide-y divide-gray-100">
-                        {items.map(({ skill, assessment }) => {
+                        {items.map(({ skill, assessment }: SubjectGroupItem) => {
                             const isFocus = focusSkillsIds.includes(skill.id);
                             return (
                             <div key={`${skill.id}-${assessment?.id}`} className="p-4 md:p-6 hover:bg-gray-50 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -352,7 +352,7 @@ export const StudentDetail: React.FC<StudentDetailProps> = ({
                                     <span className={`text-xs font-mono px-2 py-0.5 rounded border ${isFocus ? 'bg-[#c48b5e] text-white border-[#c48b5e]' : 'bg-indigo-50 text-[#c48b5e] border-[#eaddcf] '}`}>
                                     {skill.code}
                                     </span>
-                                    {isFocus && <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-bold flex items-center gap-0.5"><Star size={8} fill="currentColor" /> Foco</span>}
+                                    {isFocus && <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-bold flex items-center gap-0.5"><Star size={8} className="fill-current" /> Foco</span>}
                                     {getStatusBadge(assessment?.status)}
                                 </div>
                                 <p className="text-gray-800 text-sm">{skill.description}</p>
