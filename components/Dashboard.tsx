@@ -62,7 +62,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onNavigateToRemediation 
 }) => {
   const [selectedTerm, setSelectedTerm] = useState('all');
-  const [showCharts, setShowCharts] = useState(true); // Controla a visibilidade dos gráficos
+  const [showCharts, setShowCharts] = useState(true); 
 
   // Filtros Específicos para o Gráfico de Desempenho (Diretor)
   const [chartClassFilter, setChartClassFilter] = useState('all');
@@ -117,7 +117,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
             return {
                 id: cls.id,
-                name: cls.name, // Use short name for chart
+                name: cls.name, 
                 fullName: `${cls.name} - ${cls.grade}`,
                 rate: rate,
                 students: classStudentsIds.length

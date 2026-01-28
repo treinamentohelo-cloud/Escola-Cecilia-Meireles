@@ -73,15 +73,18 @@ export const AssessmentManager: React.FC<AssessmentManagerProps> = ({
   // --- Logic for Single Entry Modal ---
   const studentAttendance = useMemo(() => {
     if (!formStudentId || !formClassId) return null;
-    const classLogs = logs.filter(l => l.classId === formClassId);
+    const classLogs = logs?.filter(l => l.classId === formClassId) || [];
     if (classLogs.length === 0) return 0;
     const presentCount = classLogs.filter(l => l.attendance && l.attendance[formStudentId]).length;
     return Math.round((presentCount / classLogs.length) * 100);
   }, [formStudentId, formClassId, logs]);
 
   useEffect(() => {
-      if (studentAttendance !== null) {
-          const calculatedScore = (studentAttendance / 10).toFixed(1);
+      if (studentAttendance !== null && studentAttendance !== undefined) {
+          // Proteção contra NaN ou tipos inesperados
+          const calculatedScore = typeof studentAttendance === 'number' && !isNaN(studentAttendance)
+              ? (studentAttendance / 10).toFixed(1)
+              : '';
           setFormParticipation(calculatedScore);
       }
   }, [studentAttendance]);
@@ -113,11 +116,13 @@ export const AssessmentManager: React.FC<AssessmentManagerProps> = ({
               } else {
                   // Calculate participation from logs if possible
                   let calcParticipation = '';
-                  const classLogs = logs.filter(l => l.classId === batchClassId);
+                  const classLogs = logs?.filter(l => l.classId === batchClassId) || [];
                   if (classLogs.length > 0) {
                       const presentCount = classLogs.filter(l => l.attendance && l.attendance[student.id]).length;
                       const pct = Math.round((presentCount / classLogs.length) * 100);
-                      calcParticipation = (pct / 10).toFixed(1);
+                      if (typeof pct === 'number' && !isNaN(pct)) {
+                          calcParticipation = (pct / 10).toFixed(1);
+                      }
                   }
 
                   newBatchData[student.id] = {

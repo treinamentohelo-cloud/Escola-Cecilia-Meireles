@@ -9,25 +9,25 @@ import {
   Loader2, 
   Users, 
   GraduationCap, 
-  ClipboardCheck,
-  Wifi,
-  WifiOff,
-  ChevronLeft,
-  ChevronRight,
-  Menu,
-  Settings,
-  X,
-  Megaphone,
-  Calendar as CalendarIcon,
-  BarChart3,
-  Folder,
-  Sparkles,
-  Camera,
-  Upload,
-  Trash2,
-  Globe
+  ClipboardCheck, 
+  Wifi, 
+  WifiOff, 
+  ChevronLeft, 
+  ChevronRight, 
+  Menu, 
+  Settings, 
+  X, 
+  Megaphone, 
+  Calendar as CalendarIcon, 
+  BarChart3, 
+  Folder, 
+  Sparkles, 
+  Camera, 
+  Upload, 
+  Trash2, 
+  Globe 
 } from 'lucide-react';
-import { api, updateApiConfig, getApiUrl } from './supabaseClient'; // Import new functions
+import { api, updateApiConfig, getApiUrl } from './supabaseClient';
 import { Dashboard } from './components/Dashboard';
 import { ClassList } from './components/ClassList';
 import { StudentManager } from './components/StudentManager';
@@ -50,28 +50,38 @@ import {
   Assessment, 
   AssessmentStatus, 
   Page, 
-  User,
-  ClassDailyLog,
-  Subject,
-  Notice,
-  Material,
-  LessonPlan
+  User, 
+  ClassDailyLog, 
+  Subject, 
+  Notice, 
+  Material, 
+  LessonPlan 
 } from './types';
 
 // --- Mapeadores de Banco de Dados (Snake Case -> Camel Case) ---
 
-const mapClassFromDB = (c: any): ClassGroup => ({
-  id: c.id,
-  name: c.name,
-  grade: c.grade,
-  year: Number(c.year),
-  shift: c.shift,
-  status: c.status,
-  // Parse JSON string se vier como string do PHP
-  teacherIds: parseJsonField(c.teacher_ids) || (c.teacher_id ? [c.teacher_id] : []),
-  isRemediation: Boolean(Number(c.is_remediation)), // PHP retorna 0 ou 1
-  focusSkills: parseJsonField(c.focus_skills) || []
-});
+// Helper para tratar campos JSON que podem vir como string do MySQL
+function parseJsonField(field: any) {
+    if (typeof field === 'string') {
+        try { return JSON.parse(field); } catch { return null; }
+    }
+    return field;
+}
+
+const mapClassFromDB = (c: any): ClassGroup => {
+  const tIds = parseJsonField(c.teacher_ids);
+  return {
+    id: c.id,
+    name: c.name,
+    grade: c.grade,
+    year: Number(c.year),
+    shift: c.shift,
+    status: c.status,
+    teacherIds: Array.isArray(tIds) ? tIds : (c.teacher_id ? [c.teacher_id] : []),
+    isRemediation: c.is_remediation ? Boolean(Number(c.is_remediation)) : false,
+    focusSkills: parseJsonField(c.focus_skills) || []
+  };
+};
 
 const mapStudentFromDB = (s: any): Student => ({
   id: s.id,
@@ -151,14 +161,6 @@ const mapLessonPlanFromDB = (p: any): LessonPlan => ({
   createdAt: p.created_at
 });
 
-// Helper para tratar campos JSON que podem vir como string do MySQL
-function parseJsonField(field: any) {
-    if (typeof field === 'string') {
-        try { return JSON.parse(field); } catch { return null; }
-    }
-    return field;
-}
-
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => !!localStorage.getItem('school_app_user'));
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
@@ -167,14 +169,13 @@ export default function App() {
   });
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [apiStatus, setApiStatus] = useState<boolean>(false); // Connection status
+  const [apiStatus, setApiStatus] = useState<boolean>(false); 
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
   
-  // Sidebar states
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true); // Desktop collapse
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // Mobile toggler
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true); 
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); 
 
-  const [isParentMode, setIsParentMode] = useState(false); // New Mode
+  const [isParentMode, setIsParentMode] = useState(false); 
   
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
@@ -201,7 +202,6 @@ export default function App() {
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
 
-  // Check connection and fetch public settings on mount
   useEffect(() => {
     const init = async () => {
        const status = await api.checkConnection();
@@ -211,7 +211,6 @@ export default function App() {
     init();
   }, []);
 
-  // Update document title and favicon if needed
   useEffect(() => {
       document.title = schoolName;
   }, [schoolName]);
@@ -238,30 +237,41 @@ export default function App() {
     try {
       setIsLoading(true);
 
+      // Função segura de fetch que não quebra o Promise.all se uma tabela falhar (ex: tabela nova inexistente)
+      const safeFetch = async (table: string) => {
+          try {
+              const res = await api.get(table);
+              return Array.isArray(res) ? res : [];
+          } catch (e) {
+              console.warn(`Atenção: Falha ao carregar tabela '${table}'. Verifique se ela existe no banco.`, e);
+              return [];
+          }
+      };
+
       const [cl, st, sk, ass, us, lg, sb, nt, mt, lp] = await Promise.all([
-        api.get('classes'),
-        api.get('students'),
-        api.get('skills'),
-        api.get('assessments'),
-        api.get('users'),
-        api.get('class_daily_logs'),
-        api.get('subjects'),
-        api.get('notices'),
-        api.get('materials'),
-        api.get('lesson_plans')
+        safeFetch('classes'),
+        safeFetch('students'),
+        safeFetch('skills'),
+        safeFetch('assessments'),
+        safeFetch('users'),
+        safeFetch('class_daily_logs'),
+        safeFetch('subjects'),
+        safeFetch('notices'),
+        safeFetch('materials'),
+        safeFetch('lesson_plans')
       ]);
 
-      setClasses(Array.isArray(cl) ? cl.map(mapClassFromDB) : []);
-      setStudents(Array.isArray(st) ? st.map(mapStudentFromDB) : []);
-      setSkills(Array.isArray(sk) ? sk.map(mapSkillFromDB) : []);
-      setAssessments(Array.isArray(ass) ? ass.map(mapAssessmentFromDB) : []);
-      setUsers(Array.isArray(us) ? us : []); 
-      setLogs(Array.isArray(lg) ? lg.map(mapLogFromDB) : []);
-      setNotices(Array.isArray(nt) ? nt.map(mapNoticeFromDB) : []);
-      setMaterials(Array.isArray(mt) ? mt.map(mapMaterialFromDB) : []);
-      setLessonPlans(Array.isArray(lp) ? lp.map(mapLessonPlanFromDB) : []);
+      setClasses(cl.map(mapClassFromDB));
+      setStudents(st.map(mapStudentFromDB));
+      setSkills(sk.map(mapSkillFromDB));
+      setAssessments(ass.map(mapAssessmentFromDB));
+      setUsers(us); 
+      setLogs(lg.map(mapLogFromDB));
+      setNotices(nt.map(mapNoticeFromDB));
+      setMaterials(mt.map(mapMaterialFromDB));
+      setLessonPlans(lp.map(mapLessonPlanFromDB));
       
-      if (Array.isArray(sb) && sb.length > 0) {
+      if (sb.length > 0) {
         setSubjects(sb.sort((a: any, b: any) => a.name.localeCompare(b.name)));
       } else {
         setSubjects([
@@ -272,12 +282,12 @@ export default function App() {
             { id: '5', name: 'Geografia' }
         ]);
       }
-      setApiStatus(true); // Success implies online
-      fetchSettings(); // Refresh settings too
+      setApiStatus(true); 
+      fetchSettings(); 
 
     } catch (err) {
       console.error('Erro crítico ao buscar dados:', err);
-      setApiStatus(false);
+      // Não setamos apiStatus=false aqui pois o safeFetch já tratou falhas individuais
     } finally {
       setIsLoading(false);
     }
@@ -306,7 +316,6 @@ export default function App() {
         return true;
     }
 
-    // Admin Backdoor
     if (email === 'admin@escola.com' && pass === '123456') {
       const activeUser = { id: 'admin-fallback', name: 'Admin Master', email: 'admin@escola.com', role: 'admin' as const, status: 'active' as const };
       setCurrentUser(activeUser);
@@ -349,10 +358,8 @@ export default function App() {
   const handleSaveSettings = async (e: React.FormEvent) => {
       e.preventDefault();
       try {
-          // Atualiza a URL da API
           if (tempApiUrl) {
               updateApiConfig(tempApiUrl);
-              // Verifica a conexão imediatamente
               const isOnline = await api.checkConnection();
               setApiStatus(isOnline);
               if (!isOnline) {
@@ -360,19 +367,16 @@ export default function App() {
               }
           }
 
-          // Salva Nome da Escola
           if (settingsLoaded) {
               await api.put('settings', 'school_name', { id: 'school_name', value: tempSchoolName });
           } else {
               await api.post('settings', { id: 'school_name', value: tempSchoolName });
           }
           
-          // Salva Logo da Escola
           if (tempSchoolLogo) {
               await api.post('settings', { id: 'school_logo', value: tempSchoolLogo });
               setSchoolLogo(tempSchoolLogo);
           } else if (tempSchoolLogo === '') {
-              // Se foi removido (string vazia)
               await api.post('settings', { id: 'school_logo', value: '' });
               setSchoolLogo(null);
           }
@@ -381,7 +385,6 @@ export default function App() {
           setSettingsLoaded(true);
           setIsSettingsModalOpen(false);
           
-          // Se a conexão voltou, recarrega os dados
           if (apiStatus) fetchData();
 
           alert('Configurações salvas com sucesso!');
@@ -390,7 +393,7 @@ export default function App() {
       }
   };
 
-  // --- CRUD OPERATIONS (Usando nova API) ---
+  // --- CRUD OPERATIONS ---
 
   const handleAddAssessment = async (a: Assessment) => {
     try {
@@ -408,23 +411,20 @@ export default function App() {
     } catch (e: any) { alert('Erro ao atualizar: ' + e.message); }
   };
 
-  // Lógica isolada para verificar reforço (usada em Add e Update)
   const checkRemediationStatus = async (a: Assessment) => {
     const student = students.find(s => s.id === a.studentId);
     if (student) {
-        const now = new Date().toISOString().slice(0, 19).replace('T', ' '); // Format MySQL DATETIME
+        const now = new Date().toISOString().slice(0, 19).replace('T', ' '); 
         let updateData: any = {};
 
         if (a.status === AssessmentStatus.ATINGIU || a.status === AssessmentStatus.SUPEROU) {
             if (student.remediationEntryDate && !student.remediationExitDate) {
                 updateData = { remediationExitDate: now };
-                // alert(`🎉 Saída automática do Reforço registrada para ${student.name}!`);
             }
         }
         else if (a.status === AssessmentStatus.NAO_ATINGIU || a.status === AssessmentStatus.EM_DESENVOLVIMENTO) {
             if (!student.remediationEntryDate || student.remediationExitDate) {
                 updateData = { remediationEntryDate: now, remediationExitDate: null };
-                // alert(`⚠️ Aluno ${student.name} adicionado ao Reforço Escolar.`);
             }
         }
 
@@ -544,19 +544,15 @@ export default function App() {
     try { await api.delete('lesson_plans', id); await fetchData(); } catch(e: any) { alert('Erro: ' + e.message); }
   };
 
-  // Parent Login Helper
   const handleParentLogin = async (reg: string, birth: string) => {
-     // Ensure we have fresh data for the portal
      await fetchData();
      const student = await api.parentLogin(reg, birth);
      if (student) {
-         // Map the single student data correctly
          return mapStudentFromDB(student);
      }
      return null;
   }
 
-  // Navigation Helper (Closes mobile menu)
   const navigateTo = (page: Page) => {
     setCurrentPage(page);
     setIsMobileMenuOpen(false);
@@ -586,7 +582,6 @@ export default function App() {
     />
   );
   
-  // Render Loading while fetching initial data AFTER login
   if (isLoading && isAuthenticated) return <div className="h-screen flex items-center justify-center bg-[#fdfbf7]"><Loader2 className="animate-spin text-[#c48b5e]" size={40} /></div>;
 
   const schoolNameParts = schoolName.split(' ');
@@ -615,7 +610,6 @@ export default function App() {
           </button>
       </div>
 
-      {/* Mobile Menu Overlay */}
       {isMobileMenuOpen && (
         <div 
           className="md:hidden fixed inset-0 bg-black/50 z-30"
@@ -653,7 +647,6 @@ export default function App() {
             )}
         </div>
         
-        {/* Toggle Expand (Desktop Only) */}
         {!isSidebarOpen && (
           <div className="hidden md:flex justify-center mb-6">
             <button onClick={() => setIsSidebarOpen(true)} className="text-[#8c7e72] hover:text-[#c48b5e] p-2 rounded-lg hover:bg-[#eaddcf]/50">
@@ -678,7 +671,6 @@ export default function App() {
         </nav>
 
         <div className="mt-auto pt-6 border-t border-[#eaddcf]">
-            {/* Connection Status Indicator */}
             {isSidebarOpen ? (
               <div className={`flex items-center justify-between mb-4 px-2 py-1.5 rounded-lg text-xs font-bold border ${apiStatus ? 'bg-green-100 text-green-700 border-green-200' : 'bg-red-100 text-red-700 border-red-200'}`}>
                  <span className="flex items-center gap-1.5">
@@ -706,7 +698,6 @@ export default function App() {
                </div>
             )}
             
-            {/* Admin Settings Button */}
             {currentUser?.role === 'admin' && (
                 <button
                     onClick={() => { 
@@ -809,7 +800,6 @@ export default function App() {
         {currentPage === 'planner' && <LessonPlanner plans={lessonPlans} classes={classes} subjects={subjects} skills={skills} currentUser={currentUser} onAddPlan={handleAddPlan} onDeletePlan={handleDeletePlan} />}
       </main>
 
-      {/* Settings Modal */}
       {isSettingsModalOpen && (
           <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
             <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden animate-in fade-in zoom-in duration-200 border border-[#eaddcf]">
@@ -820,7 +810,6 @@ export default function App() {
                     <button onClick={() => setIsSettingsModalOpen(false)} className="text-white/80 hover:text-white transition-colors"><X size={24} /></button>
                 </div>
                 <form onSubmit={handleSaveSettings} className="p-6 space-y-4">
-                    {/* Input API URL */}
                     <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-1.5 ml-1">URL da API (Conexão)</label>
                         <div className="relative">
