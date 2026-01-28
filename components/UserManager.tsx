@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Search, Edit2, Trash2, Shield, User as UserIcon, Key, Eye, EyeOff, X, Users, CheckCircle, XCircle } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, Shield, User as UserIcon, Key, Eye, EyeOff, X, Users, CheckCircle, XCircle, Briefcase } from 'lucide-react';
 import { User, UserRole } from '../types';
 
 interface UserManagerProps {
@@ -52,6 +52,12 @@ export const UserManager: React.FC<UserManagerProps> = ({
   };
 
   const handleEditClick = (user: User) => {
+    // Coordenador não pode editar Admin ou Diretor
+    if (currentUser?.role !== 'admin' && (user.role === 'admin' || user.role === 'diretor')) {
+        alert("Permissão negada: Apenas administradores podem gerenciar diretores e administradores.");
+        return;
+    }
+
     setEditingId(user.id);
     setFormData({
       name: user.name,
@@ -67,6 +73,12 @@ export const UserManager: React.FC<UserManagerProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Coordenador não pode criar Admin ou Diretor
+    if (currentUser?.role !== 'admin' && (formData.role === 'admin' || formData.role === 'diretor')) {
+        alert("Permissão negada: Você não pode criar uma conta de administrador ou diretor.");
+        return;
+    }
+
     const emailExists = users.some(u => u.email.toLowerCase() === formData.email.toLowerCase() && u.id !== editingId);
     if (emailExists) {
       alert("Este e-mail já está sendo utilizado por outro usuário.");
@@ -108,6 +120,14 @@ export const UserManager: React.FC<UserManagerProps> = ({
       alert("Você não pode excluir seu próprio usuário.");
       return;
     }
+
+    const userToDelete = users.find(u => u.id === id);
+    // Coordenador não pode excluir Admin ou Diretor
+    if (currentUser?.role !== 'admin' && (userToDelete?.role === 'admin' || userToDelete?.role === 'diretor')) {
+        alert("Permissão negada.");
+        return;
+    }
+
     onDeleteUser(id);
   };
 
@@ -116,7 +136,7 @@ export const UserManager: React.FC<UserManagerProps> = ({
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
            <h2 className="text-3xl font-bold text-[#433422]">Equipe Escolar</h2>
-           <p className="text-[#8c7e72]">Gerenciamento de acesso e permissões (Professores e Coordenadores)</p>
+           <p className="text-[#8c7e72]">Gerenciamento de acesso e permissões</p>
         </div>
         <button 
           onClick={() => { resetForm(); setIsFormOpen(true); }}
@@ -160,7 +180,7 @@ export const UserManager: React.FC<UserManagerProps> = ({
                     value={formData.email}
                     onChange={e => setFormData({...formData, email: e.target.value})}
                     className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-gray-900 bg-white"
-                    placeholder="professor@escola.com"
+                    placeholder="diretoria@escola.com"
                   />
                 </div>
 
@@ -197,7 +217,13 @@ export const UserManager: React.FC<UserManagerProps> = ({
                        >
                           <option value="professor">Professor(a)</option>
                           <option value="coordenador">Coordenador(a)</option>
-                          <option value="admin">Administrador(a)</option>
+                          {/* Apenas Admin pode criar outro Admin ou Diretor */}
+                          {currentUser?.role === 'admin' && (
+                              <>
+                                <option value="diretor">Diretor(a)</option>
+                                <option value="admin">Administrador(a)</option>
+                              </>
+                          )}
                        </select>
                     </div>
                     <div>
@@ -255,72 +281,81 @@ export const UserManager: React.FC<UserManagerProps> = ({
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {filteredUsers.map(user => (
-              <tr key={user.id} className="hover:bg-[#eaddcf]/20 transition-colors group">
-                <td className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-[#fcf9f6] border border-[#eaddcf] flex items-center justify-center text-[#c48b5e] relative">
-                      <UserIcon size={20} />
-                      {user.status === 'inactive' && (
-                         <div className="absolute -bottom-1 -right-1 bg-red-500 text-white rounded-full p-0.5 border border-white">
-                            <X size={10} />
-                         </div>
-                      )}
-                    </div>
-                    <div>
-                      <p className={`font-medium ${user.status === 'inactive' ? 'text-gray-400 line-through' : 'text-[#433422]'}`}>{user.name}</p>
-                      <div className="flex items-center gap-2">
-                          <p className="text-xs text-gray-500">{user.email}</p>
-                          {/* Password Hint for Admin Debugging */}
-                          {user.password && (
-                              <span className="text-[10px] text-gray-300 cursor-help opacity-0 group-hover:opacity-100 transition-opacity" title={`Senha atual: ${user.password}`}>
-                                  (Senha: {user.password})
-                              </span>
+            {filteredUsers.map(user => {
+                const isTargetAdmin = user.role === 'admin';
+                const canEdit = currentUser?.role === 'admin' || (!isTargetAdmin && user.role !== 'diretor');
+
+                return (
+                  <tr key={user.id} className="hover:bg-[#eaddcf]/20 transition-colors group">
+                    <td className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-[#fcf9f6] border border-[#eaddcf] flex items-center justify-center text-[#c48b5e] relative">
+                          <UserIcon size={20} />
+                          {user.status === 'inactive' && (
+                             <div className="absolute -bottom-1 -right-1 bg-red-500 text-white rounded-full p-0.5 border border-white">
+                                <X size={10} />
+                             </div>
                           )}
+                        </div>
+                        <div>
+                          <p className={`font-medium ${user.status === 'inactive' ? 'text-gray-400 line-through' : 'text-[#433422]'}`}>{user.name}</p>
+                          <div className="flex items-center gap-2">
+                              <p className="text-xs text-gray-500">{user.email}</p>
+                              {/* Password Hint only for Admin */}
+                              {user.password && currentUser?.role === 'admin' && (
+                                  <span className="text-[10px] text-gray-300 cursor-help opacity-0 group-hover:opacity-100 transition-opacity" title={`Senha atual: ${user.password}`}>
+                                      (Senha: {user.password})
+                                  </span>
+                              )}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                </td>
-                <td className="p-4">
-                   <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium border
-                     ${user.role === 'admin' ? 'bg-purple-50 text-purple-700 border-purple-100' : 
-                       user.role === 'coordenador' ? 'bg-blue-50 text-blue-700 border-blue-100' : 
-                       'bg-gray-50 text-gray-700 border-gray-200'}`}>
-                     {user.role === 'admin' && <Shield size={10} />}
-                     {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
-                   </span>
-                </td>
-                <td className="p-4 text-center">
-                    {user.status === 'inactive' ? (
-                        <span className="inline-flex items-center gap-1 text-xs font-bold text-red-500 bg-red-50 px-2 py-1 rounded border border-red-100">
-                            <XCircle size={12} /> Inativo
-                        </span>
-                    ) : (
-                        <span className="inline-flex items-center gap-1 text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded border border-green-100">
-                            <CheckCircle size={12} /> Ativo
-                        </span>
-                    )}
-                </td>
-                <td className="p-4 text-right">
-                   <div className="flex items-center justify-end gap-2">
-                     <button 
-                       onClick={() => handleEditClick(user)}
-                       className="p-2 text-gray-400 hover:text-[#c48b5e] hover:bg-[#eaddcf] rounded-lg transition-colors"
-                       title="Editar"
-                     >
-                       <Edit2 size={18} />
-                     </button>
-                     <button 
-                       onClick={() => handleDeleteClick(user.id)}
-                       className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                       title="Excluir ou Inativar"
-                     >
-                       <Trash2 size={18} />
-                     </button>
-                   </div>
-                </td>
-              </tr>
-            ))}
+                    </td>
+                    <td className="p-4">
+                       <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium border
+                         ${user.role === 'admin' ? 'bg-purple-50 text-purple-700 border-purple-100' : 
+                           user.role === 'diretor' ? 'bg-indigo-50 text-indigo-700 border-indigo-100' :
+                           user.role === 'coordenador' ? 'bg-blue-50 text-blue-700 border-blue-100' : 
+                           'bg-gray-50 text-gray-700 border-gray-200'}`}>
+                         {user.role === 'admin' && <Shield size={10} />}
+                         {user.role === 'diretor' && <Briefcase size={10} />}
+                         {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                       </span>
+                    </td>
+                    <td className="p-4 text-center">
+                        {user.status === 'inactive' ? (
+                            <span className="inline-flex items-center gap-1 text-xs font-bold text-red-500 bg-red-50 px-2 py-1 rounded border border-red-100">
+                                <XCircle size={12} /> Inativo
+                            </span>
+                        ) : (
+                            <span className="inline-flex items-center gap-1 text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded border border-green-100">
+                                <CheckCircle size={12} /> Ativo
+                            </span>
+                        )}
+                    </td>
+                    <td className="p-4 text-right">
+                       <div className="flex items-center justify-end gap-2">
+                         <button 
+                           onClick={() => handleEditClick(user)}
+                           disabled={!canEdit}
+                           className={`p-2 rounded-lg transition-colors ${canEdit ? 'text-gray-400 hover:text-[#c48b5e] hover:bg-[#eaddcf]' : 'text-gray-300 cursor-not-allowed'}`}
+                           title={canEdit ? "Editar" : "Permissão Necessária: Admin"}
+                         >
+                           <Edit2 size={18} />
+                         </button>
+                         <button 
+                           onClick={() => handleDeleteClick(user.id)}
+                           disabled={!canEdit}
+                           className={`p-2 rounded-lg transition-colors ${canEdit ? 'text-gray-400 hover:text-red-600 hover:bg-red-50' : 'text-gray-300 cursor-not-allowed'}`}
+                           title={canEdit ? "Excluir ou Inativar" : "Permissão Necessária: Admin"}
+                         >
+                           <Trash2 size={18} />
+                         </button>
+                       </div>
+                    </td>
+                  </tr>
+                );
+            })}
           </tbody>
         </table>
         {filteredUsers.length === 0 && (

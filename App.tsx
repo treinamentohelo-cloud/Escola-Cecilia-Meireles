@@ -674,7 +674,7 @@ export default function App() {
           <NavItem icon={<Folder size={20} />} label="Materiais" active={currentPage === 'library'} collapsed={!isSidebarOpen} onClick={() => navigateTo('library')} />
           <NavItem icon={<BookOpen size={20} />} label="BNCC" active={currentPage === 'skills'} collapsed={!isSidebarOpen} onClick={() => navigateTo('skills')} />
           <NavItem icon={<Megaphone size={20} />} label="Comunicados" active={currentPage === 'notices'} collapsed={!isSidebarOpen} onClick={() => navigateTo('notices')} />
-          {currentUser?.role === 'admin' && <NavItem icon={<UserIcon size={20} />} label="Equipe" active={currentPage === 'users'} collapsed={!isSidebarOpen} onClick={() => navigateTo('users')} />}
+          {(currentUser?.role === 'admin' || currentUser?.role === 'coordenador' || currentUser?.role === 'diretor') && <NavItem icon={<UserIcon size={20} />} label="Equipe" active={currentPage === 'users'} collapsed={!isSidebarOpen} onClick={() => navigateTo('users')} />}
         </nav>
 
         <div className="mt-auto pt-6 border-t border-[#eaddcf]">
@@ -734,7 +734,7 @@ export default function App() {
       </aside>
 
       <main className="flex-1 overflow-auto p-4 md:p-10 transition-all pt-16 md:pt-10">
-        {currentPage === 'dashboard' && <Dashboard classes={classes} students={students} assessments={assessments} skills={skills} notices={notices} currentUser={currentUser} onNavigateToRemediation={() => setCurrentPage('remediation')} />}
+        {currentPage === 'dashboard' && <Dashboard classes={classes} students={students} assessments={assessments} skills={skills} notices={notices} logs={logs} users={users} currentUser={currentUser} onNavigateToRemediation={() => setCurrentPage('remediation')} />}
         
         {currentPage === 'classes' && <ClassList 
           classes={classes} 

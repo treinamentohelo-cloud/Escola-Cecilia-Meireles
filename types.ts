@@ -106,7 +106,7 @@ export interface LessonPlan {
   createdAt: string;
 }
 
-export type UserRole = 'admin' | 'coordenador' | 'professor';
+export type UserRole = 'admin' | 'diretor' | 'coordenador' | 'professor';
 
 export interface User {
   id: string;
