@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { ChevronRight, Users, GraduationCap, Plus, Camera, Calendar, Phone, User as UserIcon, Edit2, Trash2, ArrowLeft, X, Target, BookOpen, Save, CheckSquare, Square, Clock, Archive, RefreshCcw, Check, School, Search, Filter, ChevronDown, ChevronUp, Hash, ExternalLink, UserCheck, Upload, AlertTriangle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ChevronRight, Users, GraduationCap, Plus, Camera, Calendar, Phone, User as UserIcon, Edit2, Trash2, ArrowLeft, X, Target, BookOpen, Save, CheckSquare, Square, Clock, Archive, RefreshCcw, Check, School, Search, Filter, ChevronDown, ChevronUp, Hash, ExternalLink, UserCheck, Upload, AlertTriangle, ArrowRightLeft, ArrowRight } from 'lucide-react';
 import { ClassGroup, Student, User, ClassDailyLog } from '../types';
 
 interface ClassListProps {
@@ -48,6 +48,12 @@ export const ClassList: React.FC<ClassListProps> = ({
   const [isStudentModalOpen, setIsStudentModalOpen] = useState(false);
   const [editingClassId, setEditingClassId] = useState<string | null>(null);
   
+  // Transfer Modal State
+  const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
+  const [transferSourceId, setTransferSourceId] = useState('');
+  const [transferTargetId, setTransferTargetId] = useState('');
+  const [studentsToTransfer, setStudentsToTransfer] = useState<string[]>([]);
+
   // Filters
   const [searchTerm, setSearchTerm] = useState('');
   const [filterShift, setFilterShift] = useState('all');
@@ -103,6 +109,43 @@ export const ClassList: React.FC<ClassListProps> = ({
   const classLogs = activeClass 
     ? logs.filter(l => l.classId === activeClass.id).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     : [];
+
+  // --- Transfer Logic ---
+  const sourceStudents = students.filter(s => s.classId === transferSourceId && s.status === 'active');
+
+  const handleToggleTransferStudent = (studentId: string) => {
+      setStudentsToTransfer(prev => 
+          prev.includes(studentId) ? prev.filter(id => id !== studentId) : [...prev, studentId]
+      );
+  };
+
+  const handleSelectAllTransfer = () => {
+      if (studentsToTransfer.length === sourceStudents.length) {
+          setStudentsToTransfer([]);
+      } else {
+          setStudentsToTransfer(sourceStudents.map(s => s.id));
+      }
+  };
+
+  const handleExecuteTransfer = () => {
+      if (!transferTargetId || studentsToTransfer.length === 0) return;
+
+      if (window.confirm(`Confirma a transferência de ${studentsToTransfer.length} alunos?`)) {
+          studentsToTransfer.forEach(studentId => {
+              const student = students.find(s => s.id === studentId);
+              if (student) {
+                  onUpdateStudent({ ...student, classId: transferTargetId });
+              }
+          });
+          alert("Transferência realizada com sucesso!");
+          setIsTransferModalOpen(false);
+          setTransferSourceId('');
+          setTransferTargetId('');
+          setStudentsToTransfer([]);
+      }
+  };
+
+  // --- Other Handlers ---
 
   const handleEditClassClick = (e: React.MouseEvent, cls: ClassGroup) => {
       e.stopPropagation();
@@ -630,12 +673,20 @@ export const ClassList: React.FC<ClassListProps> = ({
            <h2 className="text-3xl font-bold text-[#433422]">Minhas Turmas</h2>
            <p className="text-[#8c7e72]">Gerenciamento de salas e alunos</p>
         </div>
-        <button 
-          onClick={() => { setEditingClassId(null); setClassFormData({ name: '', grade: '', year: new Date().getFullYear(), shift: 'Matutino', teacherIds: [], status: 'active' }); setIsClassModalOpen(true); }}
-          className="bg-[#c48b5e] hover:bg-[#a0704a] text-white px-6 py-2.5 rounded-xl flex items-center gap-2 shadow-lg shadow-[#c48b5e]/20 transition-all transform hover:-translate-y-0.5 font-medium"
-        >
-          <Plus size={18} /> Nova Turma
-        </button>
+        <div className="flex gap-2">
+            <button 
+              onClick={() => setIsTransferModalOpen(true)}
+              className="bg-white border border-[#eaddcf] text-[#c48b5e] hover:bg-[#fcf9f6] px-4 py-2.5 rounded-xl flex items-center gap-2 font-medium transition-all"
+            >
+              <ArrowRightLeft size={18} /> Transferir / Promover
+            </button>
+            <button 
+              onClick={() => { setEditingClassId(null); setClassFormData({ name: '', grade: '', year: new Date().getFullYear(), shift: 'Matutino', teacherIds: [], status: 'active' }); setIsClassModalOpen(true); }}
+              className="bg-[#c48b5e] hover:bg-[#a0704a] text-white px-6 py-2.5 rounded-xl flex items-center gap-2 shadow-lg shadow-[#c48b5e]/20 transition-all transform hover:-translate-y-0.5 font-medium"
+            >
+              <Plus size={18} /> Nova Turma
+            </button>
+        </div>
       </div>
 
       {/* FILTER BAR */}
@@ -869,6 +920,110 @@ export const ClassList: React.FC<ClassListProps> = ({
           </div>
         </div>
       )}
+
+      {/* Modal de Transferência em Lote */}
+      {isTransferModalOpen && (
+          <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden animate-in fade-in zoom-in duration-200 border border-[#eaddcf] h-[80vh] flex flex-col">
+               <div className="px-6 py-5 bg-gradient-to-r from-[#c48b5e] to-[#a0704a] flex justify-between items-center shrink-0">
+                   <h3 className="font-bold text-xl text-white flex items-center gap-2">
+                      <ArrowRightLeft className="text-[#eaddcf]" size={24} /> Transferir / Promover Alunos
+                   </h3>
+                   <button onClick={() => setIsTransferModalOpen(false)} className="text-white/80 hover:text-white transition-colors">
+                      <X size={24} />
+                   </button>
+               </div>
+               
+               <div className="p-6 flex-1 overflow-y-auto flex flex-col">
+                   {/* Seleção de Origem e Destino */}
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                       <div>
+                           <label className="block text-sm font-bold text-gray-700 mb-1.5 uppercase">De (Origem)</label>
+                           <select 
+                                className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#c48b5e] bg-white text-gray-900"
+                                value={transferSourceId}
+                                onChange={e => { setTransferSourceId(e.target.value); setStudentsToTransfer([]); }}
+                           >
+                                <option value="">Selecione a turma...</option>
+                                {classes.filter(c => c.status !== 'inactive').map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                           </select>
+                       </div>
+                       
+                       <div className="flex items-center justify-center md:hidden">
+                           <ArrowDownIcon />
+                       </div>
+
+                       <div>
+                           <label className="block text-sm font-bold text-gray-700 mb-1.5 uppercase">Para (Destino)</label>
+                           <select 
+                                className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#c48b5e] bg-white text-gray-900"
+                                value={transferTargetId}
+                                onChange={e => setTransferTargetId(e.target.value)}
+                                disabled={!transferSourceId}
+                           >
+                                <option value="">Selecione a turma...</option>
+                                {classes.filter(c => c.status !== 'inactive' && c.id !== transferSourceId).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                           </select>
+                       </div>
+                   </div>
+
+                   {/* Lista de Seleção de Alunos */}
+                   {transferSourceId && (
+                       <div className="flex-1 flex flex-col border border-gray-200 rounded-xl overflow-hidden">
+                           <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex justify-between items-center">
+                               <h4 className="font-bold text-gray-700 text-sm">Alunos Disponíveis ({sourceStudents.length})</h4>
+                               <button 
+                                    onClick={handleSelectAllTransfer}
+                                    className="text-xs font-bold text-[#c48b5e] hover:underline"
+                               >
+                                    {studentsToTransfer.length === sourceStudents.length ? 'Desmarcar Todos' : 'Selecionar Todos'}
+                               </button>
+                           </div>
+                           <div className="flex-1 overflow-y-auto p-2 space-y-1 bg-white">
+                               {sourceStudents.length === 0 && <p className="text-gray-400 text-center py-8 text-sm">Nenhum aluno ativo nesta turma.</p>}
+                               {sourceStudents.map(student => (
+                                   <div 
+                                      key={student.id} 
+                                      onClick={() => handleToggleTransferStudent(student.id)}
+                                      className={`flex items-center justify-between p-3 rounded-lg cursor-pointer border transition-all ${studentsToTransfer.includes(student.id) ? 'bg-[#fcf9f6] border-[#c48b5e]' : 'border-transparent hover:bg-gray-50'}`}
+                                   >
+                                       <div className="flex items-center gap-3">
+                                           {studentsToTransfer.includes(student.id) ? <CheckSquare className="text-[#c48b5e]" size={20}/> : <Square className="text-gray-300" size={20}/>}
+                                           <span className="text-sm font-medium text-gray-700">{student.name}</span>
+                                       </div>
+                                       <span className="text-xs text-gray-400 font-mono">{student.registrationNumber}</span>
+                                   </div>
+                               ))}
+                           </div>
+                           <div className="p-3 bg-gray-50 border-t border-gray-200 text-right text-xs text-gray-500">
+                               {studentsToTransfer.length} alunos selecionados
+                           </div>
+                       </div>
+                   )}
+               </div>
+
+               <div className="p-6 border-t border-gray-100 flex gap-3 bg-white">
+                   <button 
+                        onClick={() => setIsTransferModalOpen(false)}
+                        className="flex-1 px-4 py-3 border border-gray-200 rounded-xl text-gray-600 font-medium hover:bg-gray-50"
+                   >
+                        Cancelar
+                   </button>
+                   <button 
+                        onClick={handleExecuteTransfer}
+                        disabled={!transferTargetId || studentsToTransfer.length === 0}
+                        className="flex-1 px-4 py-3 bg-[#c48b5e] text-white rounded-xl font-bold hover:bg-[#a0704a] shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                   >
+                        <ArrowRight size={18} /> Confirmar Transferência
+                   </button>
+               </div>
+            </div>
+          </div>
+      )}
     </div>
   );
 };
+
+const ArrowDownIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>
+);

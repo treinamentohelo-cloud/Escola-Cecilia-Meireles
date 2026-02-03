@@ -135,17 +135,51 @@ export const SkillManager: React.FC<SkillManagerProps> = ({
   const handleBatchTextChange = (text: string) => {
       setBatchText(text);
       
-      // Parse simples: Tenta separar CÓDIGO - DESCRIÇÃO
       const lines = text.split('\n').filter(line => line.trim() !== '');
-      const parsed = lines.map(line => {
-          // Regex para pegar o código no início (ex: EF01LP01) seguido de separador (- ou :)
-          const match = line.match(/^([A-Za-z0-9]+)\s*[-|–|:]\s*(.+)$/);
-          if (match) {
-              return { code: match[1], description: match[2], valid: true };
+      const parsedItems: any[] = [];
+      let currentItem: { code: string; description: string; valid: boolean } | null = null;
+
+      // Regex flexível para capturar códigos BNCC e descrições
+      // Captura: (Opcional parens) CODIGO (Opcional parens) (Opcional separador - : ou espaço) Descrição
+      const skillRegex = /^\s*\(?([A-Z0-9]{4,12})\)?\s*[-|–|:]?\s*(.+)$/i;
+
+      lines.forEach(line => {
+          const match = line.match(skillRegex);
+          const potentialCode = match ? match[1] : '';
+          
+          // Heurística: Um código válido geralmente contém pelo menos um número (ex: EF01LP01, EM13, etc)
+          // Isso evita capturar palavras comuns em listas numeradas erradas ou tópicos que parecem códigos.
+          const hasNumber = /\d/.test(potentialCode);
+
+          if (match && hasNumber) {
+              // Se já temos um item sendo processado, salvamos ele antes de começar o novo
+              if (currentItem) {
+                  parsedItems.push(currentItem);
+              }
+              
+              // Inicia novo item
+              currentItem = {
+                  code: potentialCode.toUpperCase(), // Padroniza maiúsculo
+                  description: match[2].trim(),
+                  valid: true
+              };
+          } else {
+              // Se não detectou um novo código, assume que é continuação da descrição do item anterior (multilinha)
+              if (currentItem) {
+                  currentItem.description += ' ' + line.trim();
+              } else {
+                  // Linha órfã que não é continuação nem novo código
+                  parsedItems.push({ code: '?', description: line, valid: false });
+              }
           }
-          return { code: '?', description: line, valid: false };
       });
-      setBatchPreview(parsed);
+
+      // Adiciona o último item processado
+      if (currentItem) {
+          parsedItems.push(currentItem);
+      }
+
+      setBatchPreview(parsedItems);
   };
 
   const handleBatchSubmit = () => {
@@ -368,8 +402,8 @@ export const SkillManager: React.FC<SkillManagerProps> = ({
                                <p className="font-bold mb-1">Como usar:</p>
                                <p>1. Selecione a Disciplina e o Ano.</p>
                                <p>2. Cole a lista de habilidades abaixo.</p>
-                               <p>3. Formato esperado por linha: <code>CÓDIGO - DESCRIÇÃO</code></p>
-                               <p className="text-xs text-gray-500 mt-2">Exemplo: <br/>EF01LP01 - Reconhecer que textos são lidos...<br/>EF01LP02 - Escrever espontaneamente...</p>
+                               <p>3. O sistema reconhece automaticamente códigos como <strong>EF01LP01</strong> ou <strong>(EF01LP01)</strong>.</p>
+                               <p className="text-xs text-gray-500 mt-2">Dica: Textos quebrados em várias linhas serão unidos automaticamente à habilidade anterior.</p>
                            </div>
 
                            <div className="grid grid-cols-2 gap-4">
@@ -399,7 +433,7 @@ export const SkillManager: React.FC<SkillManagerProps> = ({
                                <label className="block text-sm font-bold text-gray-700 mb-1.5">Lista de Habilidades</label>
                                <textarea 
                                     className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#c48b5e] bg-white text-gray-900 font-mono text-sm resize-none flex-1 min-h-[300px]"
-                                    placeholder="EF01LP01 - Descrição aqui..."
+                                    placeholder="Cole aqui... Ex: (EF01LP01) Descrição..."
                                     value={batchText}
                                     onChange={e => handleBatchTextChange(e.target.value)}
                                />
