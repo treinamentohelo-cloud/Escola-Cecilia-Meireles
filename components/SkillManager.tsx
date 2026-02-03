@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Search, BookOpen, Edit2, Trash2, Link as LinkIcon, X, CheckSquare, Square, School, Library } from 'lucide-react';
+import { Plus, Search, BookOpen, Edit2, Trash2, Link as LinkIcon, X, CheckSquare, Square, School, Library, Upload, AlertCircle, FileText } from 'lucide-react';
 import { Skill, ClassGroup, User as UserType, Subject } from '../types';
 
 interface SkillManagerProps {
@@ -40,6 +40,13 @@ export const SkillManager: React.FC<SkillManagerProps> = ({
   // Create Subject State
   const [isSubjectModalOpen, setIsSubjectModalOpen] = useState(false);
   const [newSubjectName, setNewSubjectName] = useState('');
+
+  // Batch Import State
+  const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
+  const [batchSubject, setBatchSubject] = useState('');
+  const [batchYear, setBatchYear] = useState('');
+  const [batchText, setBatchText] = useState('');
+  const [batchPreview, setBatchPreview] = useState<any[]>([]);
 
   // State for Linking Modal
   const [linkingSkill, setLinkingSkill] = useState<Skill | null>(null);
@@ -124,6 +131,54 @@ export const SkillManager: React.FC<SkillManagerProps> = ({
       setFormData(prev => ({ ...prev, subject: newSubject.name }));
   };
 
+  // --- Batch Import Logic ---
+  const handleBatchTextChange = (text: string) => {
+      setBatchText(text);
+      
+      // Parse simples: Tenta separar CÓDIGO - DESCRIÇÃO
+      const lines = text.split('\n').filter(line => line.trim() !== '');
+      const parsed = lines.map(line => {
+          // Regex para pegar o código no início (ex: EF01LP01) seguido de separador (- ou :)
+          const match = line.match(/^([A-Za-z0-9]+)\s*[-|–|:]\s*(.+)$/);
+          if (match) {
+              return { code: match[1], description: match[2], valid: true };
+          }
+          return { code: '?', description: line, valid: false };
+      });
+      setBatchPreview(parsed);
+  };
+
+  const handleBatchSubmit = () => {
+      if (!batchSubject || !batchYear) {
+          alert('Por favor, selecione a Disciplina e o Ano para aplicar a todas as habilidades.');
+          return;
+      }
+
+      const validItems = batchPreview.filter(p => p.valid);
+      if (validItems.length === 0) {
+          alert('Nenhuma habilidade válida identificada. Verifique o formato do texto.');
+          return;
+      }
+
+      if (window.confirm(`Confirma a importação de ${validItems.length} habilidades para ${batchSubject}?`)) {
+          validItems.forEach(item => {
+              onAddSkill({
+                  id: generateId(),
+                  code: item.code,
+                  description: item.description,
+                  subject: batchSubject,
+                  year: batchYear
+              });
+          });
+          
+          setIsBatchModalOpen(false);
+          setBatchText('');
+          setBatchPreview([]);
+          setBatchSubject('');
+          setBatchYear('');
+      }
+  };
+
   // --- Link to Class Logic ---
 
   const openLinkModal = (skill: Skill) => {
@@ -174,12 +229,20 @@ export const SkillManager: React.FC<SkillManagerProps> = ({
            <h2 className="text-3xl font-bold text-[#433422]">Habilidades BNCC</h2>
            <p className="text-[#8c7e72]">Catálogo de competências curriculares</p>
         </div>
-        <button 
-          onClick={() => { resetForm(); setIsFormOpen(true); }}
-          className="bg-[#c48b5e] hover:bg-[#a0704a] text-white px-6 py-2.5 rounded-xl flex items-center gap-2 shadow-lg shadow-[#c48b5e]/20 transition-all transform hover:-translate-y-0.5 font-medium"
-        >
-          <Plus size={18} /> Cadastrar Habilidade
-        </button>
+        <div className="flex gap-2">
+            <button 
+              onClick={() => setIsBatchModalOpen(true)}
+              className="bg-white border border-[#eaddcf] text-[#c48b5e] hover:bg-[#fcf9f6] px-4 py-2.5 rounded-xl flex items-center gap-2 font-medium transition-all"
+            >
+              <Upload size={18} /> Importar em Lote
+            </button>
+            <button 
+              onClick={() => { resetForm(); setIsFormOpen(true); }}
+              className="bg-[#c48b5e] hover:bg-[#a0704a] text-white px-6 py-2.5 rounded-xl flex items-center gap-2 shadow-lg shadow-[#c48b5e]/20 transition-all transform hover:-translate-y-0.5 font-medium"
+            >
+              <Plus size={18} /> Cadastrar Habilidade
+            </button>
+        </div>
       </div>
 
       {isFormOpen && (
@@ -280,6 +343,99 @@ export const SkillManager: React.FC<SkillManagerProps> = ({
                         Criar
                     </button>
                 </form>
+            </div>
+          </div>
+      )}
+
+      {/* MODAL IMPORTAÇÃO EM LOTE */}
+      {isBatchModalOpen && (
+          <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full overflow-hidden animate-in fade-in zoom-in duration-200 border border-[#eaddcf] h-[90vh] flex flex-col">
+               <div className="px-6 py-5 bg-gradient-to-r from-[#c48b5e] to-[#a0704a] flex justify-between items-center shrink-0">
+                   <h3 className="font-bold text-xl text-white flex items-center gap-2">
+                      <Upload className="text-[#eaddcf]" size={24} /> Importar Habilidades em Lote
+                   </h3>
+                   <button onClick={() => setIsBatchModalOpen(false)} className="text-white/80 hover:text-white transition-colors">
+                      <X size={24} />
+                   </button>
+               </div>
+               
+               <div className="p-6 flex-1 overflow-y-auto">
+                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-full">
+                       {/* Esquerda: Inputs */}
+                       <div className="flex flex-col gap-4">
+                           <div className="bg-[#fcf9f6] p-4 rounded-xl border border-[#eaddcf] text-sm text-[#433422] mb-2">
+                               <p className="font-bold mb-1">Como usar:</p>
+                               <p>1. Selecione a Disciplina e o Ano.</p>
+                               <p>2. Cole a lista de habilidades abaixo.</p>
+                               <p>3. Formato esperado por linha: <code>CÓDIGO - DESCRIÇÃO</code></p>
+                               <p className="text-xs text-gray-500 mt-2">Exemplo: <br/>EF01LP01 - Reconhecer que textos são lidos...<br/>EF01LP02 - Escrever espontaneamente...</p>
+                           </div>
+
+                           <div className="grid grid-cols-2 gap-4">
+                               <div>
+                                   <label className="block text-sm font-bold text-gray-700 mb-1.5">Disciplina (Aplicar a todos)</label>
+                                   <select 
+                                        className="w-full border border-gray-300 rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-[#c48b5e] bg-white text-gray-900"
+                                        value={batchSubject}
+                                        onChange={e => setBatchSubject(e.target.value)}
+                                   >
+                                        <option value="">Selecione...</option>
+                                        {subjects.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
+                                   </select>
+                               </div>
+                               <div>
+                                   <label className="block text-sm font-bold text-gray-700 mb-1.5">Ano (Aplicar a todos)</label>
+                                   <input 
+                                        className="w-full border border-gray-300 rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-[#c48b5e] bg-white text-gray-900"
+                                        value={batchYear}
+                                        onChange={e => setBatchYear(e.target.value)}
+                                        placeholder="Ex: 3º Ano"
+                                   />
+                               </div>
+                           </div>
+
+                           <div className="flex-1 flex flex-col">
+                               <label className="block text-sm font-bold text-gray-700 mb-1.5">Lista de Habilidades</label>
+                               <textarea 
+                                    className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#c48b5e] bg-white text-gray-900 font-mono text-sm resize-none flex-1 min-h-[300px]"
+                                    placeholder="EF01LP01 - Descrição aqui..."
+                                    value={batchText}
+                                    onChange={e => handleBatchTextChange(e.target.value)}
+                               />
+                           </div>
+                       </div>
+
+                       {/* Direita: Preview */}
+                       <div className="flex flex-col bg-gray-50 rounded-xl border border-gray-200 overflow-hidden">
+                           <div className="p-3 bg-gray-100 border-b border-gray-200 font-bold text-gray-600 text-sm flex justify-between">
+                               <span>Pré-visualização</span>
+                               <span>{batchPreview.filter(i => i.valid).length} Válidos</span>
+                           </div>
+                           <div className="flex-1 overflow-y-auto p-2 space-y-2">
+                               {batchPreview.length === 0 && <p className="text-gray-400 text-center text-sm py-10">Cole o texto ao lado para visualizar.</p>}
+                               {batchPreview.map((item, idx) => (
+                                   <div key={idx} className={`p-2 rounded border text-sm flex gap-2 ${item.valid ? 'bg-white border-gray-200' : 'bg-red-50 border-red-200'}`}>
+                                       {item.valid ? <CheckSquare size={16} className="text-green-500 shrink-0 mt-0.5"/> : <AlertCircle size={16} className="text-red-500 shrink-0 mt-0.5"/>}
+                                       <div>
+                                           <span className="font-bold block text-xs text-[#c48b5e]">{item.code}</span>
+                                           <span className="text-gray-700">{item.description}</span>
+                                       </div>
+                                   </div>
+                               ))}
+                           </div>
+                           <div className="p-4 bg-white border-t border-gray-200">
+                               <button 
+                                    onClick={handleBatchSubmit}
+                                    className="w-full bg-[#c48b5e] text-white py-3 rounded-xl font-bold hover:bg-[#a0704a] shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                                    disabled={!batchSubject || !batchYear || batchPreview.filter(i => i.valid).length === 0}
+                               >
+                                    Confirmar Importação
+                               </button>
+                           </div>
+                       </div>
+                   </div>
+               </div>
             </div>
           </div>
       )}
