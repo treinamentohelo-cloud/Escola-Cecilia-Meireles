@@ -82,6 +82,8 @@ ALTER TABLE public.assessments ADD COLUMN IF NOT EXISTS term TEXT;
 ALTER TABLE public.assessments ADD COLUMN IF NOT EXISTS participation_score NUMERIC;
 ALTER TABLE public.assessments ADD COLUMN IF NOT EXISTS behavior_score NUMERIC;
 ALTER TABLE public.assessments ADD COLUMN IF NOT EXISTS exam_score NUMERIC;
+-- Novo campo para avaliação por disciplina (sem habilidade específica)
+ALTER TABLE public.assessments ADD COLUMN IF NOT EXISTS subject_id TEXT;
 
 -- 6. TABELA DE DISCIPLINAS (subjects)
 CREATE TABLE IF NOT EXISTS public.subjects (

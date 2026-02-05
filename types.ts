@@ -48,7 +48,8 @@ export interface Student {
 export interface Assessment {
   id: string;
   studentId: string;
-  skillId: string; // Habilidade BNCC foco desta avaliação
+  skillId?: string; // Habilidade BNCC (Opcional se for avaliação geral de disciplina)
+  subjectId?: string; // Disciplina (Opcional se for avaliação de habilidade específica)
   date: string;
   term?: string; 
   notes?: string;

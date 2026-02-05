@@ -70,6 +70,7 @@ CREATE TABLE IF NOT EXISTS `assessments` (
     `id` VARCHAR(36) NOT NULL,
     `student_id` VARCHAR(36),
     `skill_id` VARCHAR(36),
+    `subject_id` VARCHAR(36),
     `date` DATE NOT NULL,
     `status` VARCHAR(50),
     `term` VARCHAR(50),

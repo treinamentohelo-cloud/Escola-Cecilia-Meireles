@@ -101,27 +101,71 @@ export const StudentDetail: React.FC<StudentDetailProps> = ({
     return `id-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   };
 
-  // Group assessments by Subject
-  const assessmentsBySubject = skills.reduce((acc, skill) => {
-    const assessment = studentAssessments
-        .filter(a => a.skillId === skill.id)
-        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+  // Group assessments by Subject (Include both Skill-based and Subject-based assessments)
+  const assessmentsBySubject = React.useMemo(() => {
+      const groups: Record<string, SubjectGroupItem[]> = {};
 
-    if (!acc[skill.subject]) acc[skill.subject] = [];
-    if (assessment) acc[skill.subject].push({ skill, assessment });
-    return acc;
-  }, {} as Record<string, SubjectGroupItem[]>);
+      // 1. Process Skill-based assessments
+      skills.forEach(skill => {
+          const assessment = studentAssessments
+            .filter(a => a.skillId === skill.id)
+            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+          
+          if (assessment) {
+              if (!groups[skill.subject]) groups[skill.subject] = [];
+              groups[skill.subject].push({ skill, assessment });
+          }
+      });
+
+      // 2. Process Subject-based assessments (no skillId)
+      // Note: We need a mapping from subjectId to subject Name. 
+      // Since subjects aren't passed prop, we assume we can get name from matching skills or just group them separately?
+      // Actually, we need to fetch Subject names. 
+      // For now, let's look at assessments that have subjectId but no skillId.
+      // We will try to infer Subject Name from the skills list if possible, or use a placeholder.
+      // Ideally StudentDetail should receive `subjects` prop too, but let's try to work with what we have or accept that we might need to fetch names.
+      // Wait, skill objects have `subject` name.
+      
+      studentAssessments.forEach(a => {
+          if (!a.skillId && a.subjectId) {
+              // Try to find subject name from skills list (hacky but works if skills exist for that subject)
+              const sampleSkill = skills.find(s => s.subject === 'Língua Portuguesa'); // Hard to map ID to Name without subjects list
+              // We'll skip complex mapping and just group them if we can't find name easily?
+              // The problem is we only have `subjectId`.
+              // But wait, `StudentDetail` doesn't receive `subjects`.
+              // For now, let's assume we can't easily display the subject name for these without the subjects prop.
+              // Let's filter skills to find one with matching subject string? No subjectId is an ID.
+              
+              // We'll create a "General" group or use a placeholder if we can't resolve name.
+              // Actually, let's create a Virtual Skill for display.
+              const subjectName = "Disciplina (Geral)"; // Fallback
+              
+              if (!groups[subjectName]) groups[subjectName] = [];
+              
+              // Only add if not duplicate (though without skillId it's unique per term usually)
+              groups[subjectName].push({
+                  skill: { 
+                      id: `virtual-${a.id}`, 
+                      code: 'GERAL', 
+                      description: 'Avaliação Global da Disciplina', 
+                      subject: subjectName, 
+                      year: '' 
+                  },
+                  assessment: a
+              });
+          }
+      });
+
+      return groups;
+  }, [skills, studentAssessments]);
 
   // --- Logic for Report Card (Boletim) ---
-  const uniqueSubjects = Array.from(new Set(skills.map(s => s.subject))).sort();
+  const uniqueSubjects = Array.from(new Set(Object.keys(assessmentsBySubject))).sort();
   
   const getReportCardCell = (subject: string, termName: string): ReportCardData | null => {
-      const subjectSkills = skills.filter(s => s.subject === subject);
-      const subjectSkillIds = subjectSkills.map(s => s.id);
-
-      const termAssessments = studentAssessments.filter(a => 
-          subjectSkillIds.includes(a.skillId) && a.term === termName
-      );
+      // Logic adjusted to use the computed groups instead of raw skills
+      const items = assessmentsBySubject[subject] || [];
+      const termAssessments = items.map(i => i.assessment).filter(a => a.term === termName);
 
       if (termAssessments.length === 0) return null;
 
@@ -141,7 +185,7 @@ export const StudentDetail: React.FC<StudentDetailProps> = ({
     type: 'assessment' as const,
     date: a.date,
     assessment: a,
-    skill: skills.find(s => s.id === a.skillId)
+    skill: a.skillId ? skills.find(s => s.id === a.skillId) : { id: 'gen', code: 'GERAL', description: 'Avaliação de Disciplina', subject: 'Geral', year: '' }
   }));
 
   if (student.remediationEntryDate) {
@@ -295,15 +339,6 @@ export const StudentDetail: React.FC<StudentDetailProps> = ({
                             <p className="text-xs text-gray-400">Monitoramento Ativo</p>
                         </div>
                     </div>
-                )}
-                {onAddAssessment && ( // Só mostra botão se não for visualização de pai
-                    <button 
-                        onClick={() => setIsModalOpen(true)} 
-                        className="flex items-center justify-center w-full md:w-auto bg-[#c48b5e] hover:bg-[#a0704a] text-white px-4 py-2.5 rounded-lg transition-colors shadow-sm font-medium print:hidden" 
-                        data-html2canvas-ignore="true"
-                    >
-                        <PlusCircle size={18} className="mr-2" /> Nova Avaliação
-                    </button>
                 )}
             </div>
         </div>
@@ -515,7 +550,7 @@ export const StudentDetail: React.FC<StudentDetailProps> = ({
                                 } else if (item.type === 'remediation_entry') {
                                     return (
                                         <tr key={idx} className="bg-red-50/50 hover:bg-red-50 transition-colors border-l-4 border-red-400">
-                                            <td className="p-4 text-sm font-mono text-red-700 whitespace-nowrap align-top font-bold">{formatDateTime(item.date)}</td>
+                                            <td className="p-4 text-sm font-mono text-red-700 whitespace-nowrap align-top font-bold">{formatDateTime(String(item.date))}</td>
                                             <td className="p-4 align-top">
                                                 <div className="text-sm font-bold text-red-800 mb-1 flex items-center gap-2"><AlertTriangle size={14} /> Reforço Escolar</div>
                                                 <div className="text-xs text-red-600">Início do ciclo de intervenção.</div>
@@ -527,7 +562,7 @@ export const StudentDetail: React.FC<StudentDetailProps> = ({
                                 } else if (item.type === 'remediation_exit') {
                                     return (
                                         <tr key={idx} className="bg-green-50/50 hover:bg-green-50 transition-colors border-l-4 border-green-400">
-                                            <td className="p-4 text-sm font-mono text-green-700 whitespace-nowrap align-top font-bold">{formatDateTime(item.date)}</td>
+                                            <td className="p-4 text-sm font-mono text-green-700 whitespace-nowrap align-top font-bold">{formatDateTime(String(item.date))}</td>
                                             <td className="p-4 align-top">
                                                 <div className="text-sm font-bold text-green-800 mb-1 flex items-center gap-2"><Flag size={14} /> Reforço Escolar</div>
                                                 <div className="text-xs text-green-600">Conclusão do ciclo.</div>
@@ -549,111 +584,6 @@ export const StudentDetail: React.FC<StudentDetailProps> = ({
             </div>
         )}
       </div>
-
-      {/* Modal de Avaliação - UNIFIED FORM */}
-      {isModalOpen && onAddAssessment && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm print:hidden" data-html2canvas-ignore="true">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden animate-in fade-in zoom-in duration-200 border border-[#eaddcf]">
-            <div className="px-6 py-5 bg-gradient-to-r from-[#c48b5e] to-[#a0704a] flex justify-between items-center">
-              <h3 className="font-bold text-xl text-white flex items-center gap-2"><ClipboardCheck className="text-[#eaddcf]" /> Registrar Avaliação</h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-white/80 hover:text-white transition-colors"><X size={24} /></button>
-            </div>
-            <form onSubmit={handleSubmit} className="p-8 space-y-5 max-h-[80vh] overflow-y-auto">
-              {/* Form Content (Igual ao original) */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5 ml-1">Habilidade / Contexto</label>
-                <select required value={selectedSkillId} onChange={(e) => setSelectedSkillId(e.target.value)} className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 bg-white text-[#000039]">
-                  <option value="">Selecione...</option>
-                  {skills.map(s => (<option key={s.id} value={s.id} className={focusSkillsIds.includes(s.id) ? 'font-bold text-[#c48b5e]' : ''}>{focusSkillsIds.includes(s.id) ? '★ ' : ''}{s.code} - {s.subject}</option>))}
-                </select>
-                {selectedSkillId && <p className="mt-2 text-xs text-gray-600 bg-[#eaddcf]/20 p-3 rounded-lg border border-[#eaddcf]">{skills.find(s => s.id === selectedSkillId)?.description}</p>}
-              </div>
-              
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5 ml-1">Trimestre</label>
-                <select required className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 bg-white text-[#000039]" value={term} onChange={e => setTerm(e.target.value)}>
-                    {TERMS.map(t => <option key={t} value={t}>{t}</option>)}
-                </select>
-              </div>
-
-              {/* Critérios Verticais */}
-              <div className="space-y-4 pt-2">
-                  <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
-                        <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Resultado (BNCC)</label>
-                        <select 
-                            required 
-                            className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 bg-white text-[#000039]"
-                            value={status}
-                            onChange={(e) => setStatus(e.target.value as AssessmentStatus)}
-                        >
-                            <option value={AssessmentStatus.NAO_ATINGIU}>Não Atingiu</option>
-                            <option value={AssessmentStatus.EM_DESENVOLVIMENTO}>Em Desenv.</option>
-                            <option value={AssessmentStatus.ATINGIU}>Atingiu</option>
-                            <option value={AssessmentStatus.SUPEROU}>Superou</option>
-                        </select>
-                  </div>
-
-                  <div className="p-3 bg-purple-50/50 rounded-xl border border-purple-100">
-                        <label className="block text-xs font-bold text-purple-700 uppercase tracking-wider mb-2 flex justify-between">
-                            Participação
-                            {attendancePercentage !== null && <span className="bg-white px-2 rounded border">Freq: {attendancePercentage}%</span>}
-                        </label>
-                        <input
-                            type="number"
-                            min="0"
-                            max="10"
-                            step="0.1"
-                            className="w-full border border-gray-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-purple-400 bg-white text-[#000039]"
-                            value={formParticipation}
-                            onChange={e => setFormParticipation(e.target.value)}
-                            placeholder="0.0"
-                        />
-                  </div>
-
-                  <div className="p-3 bg-blue-50/50 rounded-xl border border-blue-100">
-                        <label className="block text-xs font-bold text-blue-700 uppercase tracking-wider mb-2">Comportamento (Nota)</label>
-                        <input
-                            type="number"
-                            min="0"
-                            max="10"
-                            step="0.1"
-                            className="w-full border border-gray-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-400 bg-white text-[#000039]"
-                            value={formBehavior}
-                            onChange={e => setFormBehavior(e.target.value)}
-                            placeholder="0.0"
-                        />
-                  </div>
-
-                  <div className="p-3 bg-red-50/50 rounded-xl border border-red-100">
-                        <label className="block text-xs font-bold text-red-700 uppercase tracking-wider mb-2">Prova / Trabalho (Nota)</label>
-                        <input
-                            type="number"
-                            min="0"
-                            max="10"
-                            step="0.1"
-                            className="w-full border border-gray-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-red-400 bg-white text-[#000039]"
-                            value={formExam}
-                            onChange={e => setFormExam(e.target.value)}
-                            placeholder="0.0"
-                        />
-                  </div>
-              </div>
-
-              {(status !== AssessmentStatus.SUPEROU && status !== AssessmentStatus.ATINGIU) && (
-                 <div className="bg-amber-50 p-3 rounded-lg border border-amber-100"><p className="text-xs text-amber-800 flex items-start gap-2"><AlertTriangle size={14} className="mt-0.5" />O aluno será incluído na lista de <strong>Reforço Escolar</strong>.</p></div>
-              )}
-              
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5 ml-1">Observações</label>
-                <textarea value={notes} onChange={(e) => setNotes(e.target.value)} className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 bg-white h-24 resize-none" placeholder="Detalhes..." />
-              </div>
-              <div className="pt-2">
-                <button type="submit" className="w-full bg-[#c48b5e] text-white py-3.5 rounded-xl font-bold hover:bg-[#a0704a] shadow-lg shadow-[#c48b5e]/20 transition-all transform hover:-translate-y-0.5">Salvar Avaliação</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

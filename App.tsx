@@ -101,6 +101,7 @@ const mapAssessmentFromDB = (a: any): Assessment => ({
   id: a.id,
   studentId: a.student_id,
   skillId: a.skill_id,
+  subjectId: a.subject_id,
   date: a.date,
   status: a.status as AssessmentStatus,
   term: a.term,
@@ -764,6 +765,7 @@ export default function App() {
             students={students} 
             classes={classes} 
             skills={skills} 
+            subjects={subjects}
             logs={logs}
             currentUser={currentUser} 
             onAddAssessment={handleAddAssessment}

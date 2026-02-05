@@ -1,12 +1,13 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Plus, Check, Clock, AlertTriangle, Filter, Search, Trash2, ClipboardCheck, X, Calendar, User, BookOpen, Star, UserCheck, Hand, Activity, Trophy, LayoutList, Grid, Save, Loader2 } from 'lucide-react';
-import { Assessment, AssessmentStatus, ClassGroup, Skill, Student, User as UserType, ClassDailyLog } from '../types';
+import { Assessment, AssessmentStatus, ClassGroup, Skill, Student, User as UserType, ClassDailyLog, Subject } from '../types';
 
 interface AssessmentManagerProps {
   assessments: Assessment[];
   students: Student[];
   classes: ClassGroup[];
   skills: Skill[];
+  subjects: Subject[]; // Add subjects prop
   logs?: ClassDailyLog[]; 
   currentUser: UserType | null;
   onAddAssessment: (a: Assessment) => void;
@@ -28,6 +29,7 @@ export const AssessmentManager: React.FC<AssessmentManagerProps> = ({
   students,
   classes,
   skills,
+  subjects, // Receive subjects
   logs = [],
   currentUser,
   onAddAssessment,
@@ -52,7 +54,7 @@ export const AssessmentManager: React.FC<AssessmentManagerProps> = ({
   // Form State (Single Entry)
   const [formClassId, setFormClassId] = useState('');
   const [formStudentId, setFormStudentId] = useState('');
-  const [formSkillId, setFormSkillId] = useState('');
+  const [formSubjectId, setFormSubjectId] = useState(''); // Changed from formSkillId
   const [formTerm, setFormTerm] = useState('1º Trimestre');
   const [formNotes, setFormNotes] = useState('');
   const [formStatus, setFormStatus] = useState<AssessmentStatus>(AssessmentStatus.EM_DESENVOLVIMENTO);
@@ -185,11 +187,14 @@ export const AssessmentManager: React.FC<AssessmentManagerProps> = ({
   const filteredAssessments = assessments.filter(a => {
       const student = students.find(stud => stud.id === a.studentId);
       const skill = skills.find(s => s.id === a.skillId);
+      const subject = subjects.find(s => s.id === a.subjectId);
+      
       const matchesClass = filterClass === 'all' || student?.classId === filterClass;
       const matchesTerm = filterTerm === 'all' || a.term === filterTerm;
       const matchesSearch = searchTerm === '' || 
                             student?.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                            skill?.code.toLowerCase().includes(searchTerm.toLowerCase());
+                            skill?.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            subject?.name.toLowerCase().includes(searchTerm.toLowerCase());
       return matchesClass && matchesTerm && matchesSearch;
   });
 
@@ -203,12 +208,13 @@ export const AssessmentManager: React.FC<AssessmentManagerProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formStudentId || !formSkillId) return;
+    if (!formStudentId || !formSubjectId) return;
 
     onAddAssessment({
         id: generateId(),
         studentId: formStudentId,
-        skillId: formSkillId,
+        subjectId: formSubjectId, // Save selected Subject
+        skillId: undefined, // Explicitly no skill for subject-based assessment
         date: new Date().toISOString().split('T')[0],
         term: formTerm,
         notes: formNotes,
@@ -295,6 +301,7 @@ export const AssessmentManager: React.FC<AssessmentManagerProps> = ({
                 {filteredAssessments.slice().reverse().map(assessment => {
                     const student = students.find(s => s.id === assessment.studentId);
                     const skill = skills.find(s => s.id === assessment.skillId);
+                    const subject = subjects.find(s => s.id === assessment.subjectId);
                     const classInfo = classes.find(c => c.id === student?.classId);
                     const isSuperou = assessment.status === AssessmentStatus.SUPEROU;
 
@@ -327,11 +334,20 @@ export const AssessmentManager: React.FC<AssessmentManagerProps> = ({
                                     </div>
                                 </div>
                                 <div className="bg-gray-50 rounded-lg p-3 border border-gray-100 mb-2">
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <BookOpen size={14} className="text-[#c48b5e]" />
-                                        <span className="font-mono text-xs font-bold text-[#c48b5e] bg-[#eaddcf]/30 px-1.5 rounded">{skill?.code}</span>
-                                    </div>
-                                    <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed" title={skill?.description}>{skill?.description}</p>
+                                    {assessment.skillId && skill ? (
+                                        <>
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <BookOpen size={14} className="text-[#c48b5e]" />
+                                                <span className="font-mono text-xs font-bold text-[#c48b5e] bg-[#eaddcf]/30 px-1.5 rounded">{skill.code}</span>
+                                            </div>
+                                            <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed" title={skill.description}>{skill.description}</p>
+                                        </>
+                                    ) : (
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <BookOpen size={14} className="text-[#c48b5e]" />
+                                            <span className="font-bold text-sm text-[#433422]">{subject?.name || 'Disciplina Geral'}</span>
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="flex flex-wrap gap-2">
                                     {assessment.participationScore !== undefined && <span className="text-[10px] px-2 py-1 bg-purple-50 text-purple-700 rounded border border-purple-100 flex items-center gap-1"><Hand size={10}/> Part: <strong>{assessment.participationScore}</strong></span>}
@@ -535,16 +551,16 @@ export const AssessmentManager: React.FC<AssessmentManagerProps> = ({
 
                 <div className="grid grid-cols-2 gap-4">
                     <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-1.5 ml-1">Habilidade BNCC</label>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1.5 ml-1">Disciplina</label>
                         <select
                             required
                             className="w-full border border-gray-300 rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
-                            value={formSkillId}
-                            onChange={e => setFormSkillId(e.target.value)}
+                            value={formSubjectId}
+                            onChange={e => setFormSubjectId(e.target.value)}
                         >
                             <option value="">Selecione...</option>
-                            {skills.map(s => (
-                                <option key={s.id} value={s.id}>{s.code}</option>
+                            {subjects.map(s => (
+                                <option key={s.id} value={s.id}>{s.name}</option>
                             ))}
                         </select>
                     </div>
@@ -569,7 +585,7 @@ export const AssessmentManager: React.FC<AssessmentManagerProps> = ({
                     
                     {/* Habilidade Status */}
                     <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
-                        <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Habilidade BNCC (Resultado)</label>
+                        <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Desempenho Geral (Resultado)</label>
                         <select
                             required
                             className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
