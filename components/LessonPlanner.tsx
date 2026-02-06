@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI, Type, Schema } from "@google/genai";
 import { BookOpen, Sparkles, Save, Printer, Trash2, Calendar, Clock, Target, Box, FileText, CheckSquare, Square, ChevronDown, ChevronUp, Loader2, X } from 'lucide-react';
 import { LessonPlan, ClassGroup, Subject, Skill, User } from '../types';
 
@@ -55,33 +55,47 @@ export const LessonPlanner: React.FC<LessonPlannerProps> = ({
           return;
       }
 
+      // Verificação de Segurança da Chave
+      const apiKey = process.env.API_KEY;
+      if (!apiKey || apiKey.includes('YOUR_API_KEY')) {
+          alert("Erro de Configuração: Chave de API não encontrada.\n\nVerifique se o arquivo index.html contém o script de configuração da API_KEY.");
+          return;
+      }
+
       setIsGenerating(true);
       try {
           const subjectName = subjects.find(s => s.id === formData.subjectId)?.name || 'Geral';
           const className = classes.find(c => c.id === formData.classId)?.grade || 'Turma';
           
-          const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+          const ai = new GoogleGenAI({ apiKey: apiKey });
           
-          const prompt = `Crie um plano de aula estruturado para a disciplina de ${subjectName}, turma ${className}, com o tema: "${formData.title}".
-          
-          Retorne APENAS um objeto JSON com a seguinte estrutura, sem markdown:
-          {
-            "objectives": "Lista de objetivos específicos",
-            "content": "Principais tópicos do conteúdo",
-            "methodology": "Estratégias de ensino passo a passo",
-            "resources": "Materiais necessários",
-            "evaluation": "Forma de avaliação"
-          }`;
+          const prompt = `Crie um plano de aula completo e detalhado para a disciplina de ${subjectName}, turma ${className}, com o tema: "${formData.title}".`;
+
+          const responseSchema: Schema = {
+            type: Type.OBJECT,
+            properties: {
+              objectives: { type: Type.STRING, description: "Lista de objetivos específicos da aula." },
+              content: { type: Type.STRING, description: "Principais tópicos do conteúdo a ser abordado." },
+              methodology: { type: Type.STRING, description: "Estratégias de ensino e passo a passo da aula." },
+              resources: { type: Type.STRING, description: "Lista de materiais e recursos necessários." },
+              evaluation: { type: Type.STRING, description: "Forma de avaliação da aprendizagem." },
+            },
+            required: ["objectives", "content", "methodology", "resources", "evaluation"],
+          };
 
           const response = await ai.models.generateContent({
-              model: "gemini-3-flash-preview",
+              model: "gemini-2.5-flash", // Modelo rápido e estável para JSON
               contents: prompt,
               config: {
-                  responseMimeType: "application/json"
+                  responseMimeType: "application/json",
+                  responseSchema: responseSchema,
               }
           });
 
-          const result = JSON.parse(response.text || '{}');
+          const jsonText = response.text || "{}";
+          // Remove potential markdown code blocks just in case
+          const cleanJson = jsonText.replace(/```json\n?|\n?```/g, "").trim();
+          const result = JSON.parse(cleanJson);
           
           setFormData(prev => ({
               ...prev,
@@ -92,9 +106,10 @@ export const LessonPlanner: React.FC<LessonPlannerProps> = ({
               evaluation: result.evaluation || ''
           }));
 
-      } catch (error) {
+      } catch (error: any) {
           console.error("Erro ao gerar plano:", error);
-          alert("Não foi possível gerar o plano com IA. Verifique se a chave de API está configurada ou tente novamente.");
+          const errorMessage = error?.message || "Erro desconhecido";
+          alert(`Não foi possível gerar o plano com IA. \nErro: ${errorMessage}\n\nVerifique o console para mais detalhes.`);
       } finally {
           setIsGenerating(false);
       }
@@ -144,7 +159,6 @@ export const LessonPlanner: React.FC<LessonPlannerProps> = ({
   };
 
   const handlePrint = (plan: LessonPlan) => {
-      // Simples print da tela atual focada no plano (em um app real, abriria uma janela de impressão dedicada)
       window.print();
   };
 

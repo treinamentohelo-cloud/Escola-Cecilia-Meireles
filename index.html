@@ -19,16 +19,27 @@
         background-color: #fdfbf7; /* Creme Suave */
       }
     </style>
+    
+    <!-- Configuração de Ambiente para API Key (Polyfill para process.env) -->
+    <script>
+      window.process = {
+        env: {
+          API_KEY: 'AIzaSyD-ES-xDx4RE_QKh26PlZI6lwqAZ9TXTsU'
+        }
+      };
+    </script>
+
   <script type="importmap">
 {
   "imports": {
     "react": "https://esm.sh/react@^19.2.3",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react-dom/client": "https://esm.sh/react-dom@^19.2.3/client",
     "react/": "https://esm.sh/react@^19.2.3/",
     "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
     "recharts": "https://esm.sh/recharts@^3.6.0",
     "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.90.1",
-    "@google/genai": "https://esm.sh/@google/genai@^1.38.0"
+    "@google/genai": "https://esm.sh/@google/genai@^1.38.0",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.4/"
   }
 }
 </script>
