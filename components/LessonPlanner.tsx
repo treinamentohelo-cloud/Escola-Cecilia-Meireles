@@ -55,10 +55,24 @@ export const LessonPlanner: React.FC<LessonPlannerProps> = ({
           return;
       }
 
-      // Verificação de Segurança da Chave
-      const apiKey = process.env.API_KEY;
-      if (!apiKey || apiKey.includes('YOUR_API_KEY')) {
-          alert("Erro de Configuração: Chave de API não encontrada.\n\nVerifique se o arquivo index.html contém o script de configuração da API_KEY.");
+      // --- RECUPERAÇÃO ROBUSTA DA CHAVE DE API ---
+      // Tenta obter via window (injetado no index.html) para evitar que o build substitua process.env por undefined
+      let apiKey = '';
+      
+      // Tentativa 1: Via Window (Injeção manual no index.html)
+      if (typeof window !== 'undefined' && (window as any).process && (window as any).process.env) {
+          apiKey = (window as any).process.env.API_KEY;
+      } 
+      
+      // Tentativa 2: Fallback padrão
+      if (!apiKey && typeof process !== 'undefined' && process.env && process.env.API_KEY) {
+          apiKey = process.env.API_KEY;
+      }
+
+      // Validação final
+      if (!apiKey || apiKey.includes('YOUR_API_KEY') || apiKey.length < 10) {
+          console.error("Debug API Key Failure. Value found:", apiKey);
+          alert("Erro de Configuração: Chave de API não encontrada.\n\nCertifique-se de que o código em 'index.html' contém o script window.process com a chave correta.");
           return;
       }
 
@@ -109,7 +123,7 @@ export const LessonPlanner: React.FC<LessonPlannerProps> = ({
       } catch (error: any) {
           console.error("Erro ao gerar plano:", error);
           const errorMessage = error?.message || "Erro desconhecido";
-          alert(`Não foi possível gerar o plano com IA. \nErro: ${errorMessage}\n\nVerifique o console para mais detalhes.`);
+          alert(`Não foi possível gerar o plano com IA. \nErro: ${errorMessage}\n\nVerifique o console (F12) para mais detalhes.`);
       } finally {
           setIsGenerating(false);
       }

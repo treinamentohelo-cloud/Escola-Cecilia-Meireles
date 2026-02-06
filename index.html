@@ -20,7 +20,7 @@
       }
     </style>
     
-    <!-- Configuração de Ambiente para API Key (Polyfill para process.env) -->
+    <!-- FORÇAR API KEY: Injeta a chave diretamente no objeto window antes do carregamento do App -->
     <script>
       window.process = {
         env: {
