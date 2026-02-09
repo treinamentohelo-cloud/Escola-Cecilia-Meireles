@@ -1,5 +1,6 @@
+
 import React, { useState } from 'react';
-import { Plus, Search, Camera, Filter, User, Calendar, Phone, Hash, Edit2, Trash2, Upload, X, Users, Archive, RefreshCcw, Loader2 } from 'lucide-react';
+import { Plus, Search, Camera, Filter, User, Calendar, Phone, Hash, Edit2, Trash2, Upload, X, Users, Archive, RefreshCcw, Loader2, Puzzle } from 'lucide-react';
 import { Student, ClassGroup, User as UserType } from '../types';
 import { api } from '../supabaseClient';
 
@@ -41,7 +42,9 @@ export const StudentManager: React.FC<StudentManagerProps> = ({
     birthDate: '',
     parentName: '',
     phone: '',
-    status: 'active'
+    status: 'active',
+    hasSpecificities: false,
+    specificityDescription: ''
   });
 
   // Helper para gerar ID seguro
@@ -62,7 +65,8 @@ export const StudentManager: React.FC<StudentManagerProps> = ({
   const resetForm = () => {
     setFormData({ 
         name: '', classId: '', avatarUrl: '', registrationNumber: '', 
-        birthDate: '', parentName: '', phone: '', status: 'active' 
+        birthDate: '', parentName: '', phone: '', status: 'active',
+        hasSpecificities: false, specificityDescription: ''
     });
     setEditingId(null);
     setIsModalOpen(false);
@@ -80,7 +84,9 @@ export const StudentManager: React.FC<StudentManagerProps> = ({
         birthDate: student.birthDate,
         parentName: student.parentName,
         phone: student.phone,
-        status: student.status
+        status: student.status,
+        hasSpecificities: student.hasSpecificities,
+        specificityDescription: student.specificityDescription
     });
     setIsModalOpen(true);
   };
@@ -142,7 +148,9 @@ export const StudentManager: React.FC<StudentManagerProps> = ({
       birthDate: formData.birthDate,
       parentName: formData.parentName,
       phone: formData.phone,
-      status: (formData.status === 'active' || formData.status === 'inactive') ? formData.status : 'active'
+      status: (formData.status === 'active' || formData.status === 'inactive') ? formData.status : 'active',
+      hasSpecificities: formData.hasSpecificities,
+      specificityDescription: formData.specificityDescription
     };
 
     if (editingId) {
@@ -227,7 +235,14 @@ export const StudentManager: React.FC<StudentManagerProps> = ({
                             </div>
                         )}
                         <div>
-                          <p className={`font-medium transition-colors ${isActive ? 'text-[#433422]' : 'text-gray-400 line-through'}`}>{student.name}</p>
+                          <p className={`font-medium transition-colors flex items-center gap-2 ${isActive ? 'text-[#433422]' : 'text-gray-400 line-through'}`}>
+                              {student.name}
+                              {student.hasSpecificities && (
+                                  <span className="text-[#c48b5e]" title={`Especificidade: ${student.specificityDescription || 'Não informada'}`}>
+                                      <Puzzle size={14} className="fill-current/20" />
+                                  </span>
+                              )}
+                          </p>
                           <p className="text-xs text-[#8c7e72] font-mono">Mat: {student.registrationNumber || 'N/A'}</p>
                         </div>
                       </div>
@@ -392,7 +407,7 @@ export const StudentManager: React.FC<StudentManagerProps> = ({
                     </div>
                 </div>
 
-                <div className="border-t border-gray-100 pt-6">
+                <div className="border-t border-gray-100 pt-4">
                     <h4 className="font-bold text-[#433422] mb-4 text-lg">Informações de Contato</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div className="md:col-span-2">
@@ -425,6 +440,44 @@ export const StudentManager: React.FC<StudentManagerProps> = ({
                                 <option value="inactive">Inativo</option>
                             </select>
                         </div>
+                    </div>
+                </div>
+
+                {/* Seção de Educação Inclusiva */}
+                <div className="border-t border-gray-100 pt-4">
+                    <div className="bg-[#fcf9f6] p-4 rounded-xl border border-[#eaddcf]">
+                        <div className="flex items-center justify-between mb-2">
+                            <h4 className="font-bold text-[#c48b5e] flex items-center gap-2">
+                                <Puzzle size={18} /> Educação Inclusiva
+                            </h4>
+                            <div className="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+                                <input 
+                                    type="checkbox" 
+                                    name="toggle" 
+                                    id="specificity-toggle" 
+                                    className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer transition-transform duration-200 ease-in-out checked:translate-x-6 checked:border-[#c48b5e]"
+                                    checked={formData.hasSpecificities}
+                                    onChange={e => setFormData({...formData, hasSpecificities: e.target.checked})}
+                                />
+                                <label htmlFor="specificity-toggle" className={`toggle-label block overflow-hidden h-6 rounded-full cursor-pointer ${formData.hasSpecificities ? 'bg-[#c48b5e]' : 'bg-gray-300'}`}></label>
+                            </div>
+                        </div>
+                        
+                        <p className="text-xs text-gray-500 mb-3">
+                            Marque se o aluno possui necessidades educacionais específicas para acompanhamento pedagógico diferenciado.
+                        </p>
+
+                        {formData.hasSpecificities && (
+                            <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Descrição da Especificidade</label>
+                                <input 
+                                    className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#c48b5e] focus:border-transparent transition-all text-gray-900 bg-white"
+                                    placeholder="Ex: TEA, TDAH, Baixa Visão..."
+                                    value={formData.specificityDescription}
+                                    onChange={e => setFormData({...formData, specificityDescription: e.target.value})}
+                                />
+                            </div>
+                        )}
                     </div>
                 </div>
 

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { 
   User as UserIcon, 
@@ -94,7 +95,9 @@ const mapStudentFromDB = (s: any): Student => ({
   phone: s.phone,
   status: s.status,
   remediationEntryDate: s.remediation_entry_date,
-  remediationExitDate: s.remediation_exit_date
+  remediationExitDate: s.remediation_exit_date,
+  hasSpecificities: s.has_specificities ? Boolean(Number(s.has_specificities)) : false,
+  specificityDescription: s.specificity_description
 });
 
 const mapAssessmentFromDB = (a: any): Assessment => ({

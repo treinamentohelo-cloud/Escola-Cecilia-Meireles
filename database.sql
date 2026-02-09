@@ -1,8 +1,17 @@
 
+-- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+-- ⛔ PARE! LEIA ISTO ANTES DE EXECUTAR ⛔
+--
+-- ESTE SCRIPT É EXCLUSIVO PARA BANCOS DE DADOS POSTGRESQL (SUPABASE).
+--
+-- SE VOCÊ ESTÁ USANDO HOSTINGER (MYSQL), NÃO USE ESTE ARQUIVO.
+-- O USO DESTE ARQUIVO NO MYSQL CAUSARÁ O ERRO #1064 (SINTAXE).
+--
+-- ✅ PARA HOSTINGER/MYSQL: USE O ARQUIVO 'hostinger_schema.sql'
+-- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 -- ====================================================================================
--- SCRIPT DE CORREÇÃO TOTAL (ESTRUTURA COMPLETA)
--- Execute este script no "SQL Editor" do Supabase para garantir que todas as tabelas
--- e colunas existam corretamente.
+-- SCRIPT POSTGRESQL (SUPABASE APENAS)
 -- ====================================================================================
 
 -- 1. TABELA DE TURMAS (classes)
@@ -43,6 +52,9 @@ ALTER TABLE public.students ADD COLUMN IF NOT EXISTS phone TEXT;
 ALTER TABLE public.students ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'active';
 ALTER TABLE public.students ADD COLUMN IF NOT EXISTS remediation_entry_date TEXT;
 ALTER TABLE public.students ADD COLUMN IF NOT EXISTS remediation_exit_date TEXT;
+-- Novos campos para Educação Inclusiva
+ALTER TABLE public.students ADD COLUMN IF NOT EXISTS has_specificities BOOLEAN DEFAULT false;
+ALTER TABLE public.students ADD COLUMN IF NOT EXISTS specificity_description TEXT;
 
 -- 3. TABELA DE USUÁRIOS (users)
 CREATE TABLE IF NOT EXISTS public.users (

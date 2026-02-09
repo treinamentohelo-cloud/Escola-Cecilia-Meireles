@@ -43,6 +43,8 @@ export interface Student {
   status?: 'active' | 'inactive';
   remediationEntryDate?: string; // Data de entrada no reforço
   remediationExitDate?: string;  // Data de saída do reforço
+  hasSpecificities?: boolean; // Educação Inclusiva
+  specificityDescription?: string; // Detalhe (ex: TEA, TDAH)
 }
 
 export interface Assessment {

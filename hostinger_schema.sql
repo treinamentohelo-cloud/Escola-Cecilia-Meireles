@@ -1,6 +1,6 @@
 
 -- ====================================================================================
--- SCRIPT DE CRIAÇÃO DE TABELAS - MYSQL (HOSTINGER)
+-- SCRIPT DE CRIAÇÃO/ATUALIZAÇÃO DE TABELAS - MYSQL (HOSTINGER)
 -- Execute este script no phpMyAdmin da Hostinger
 -- Base de Dados: u850687847_database
 -- ====================================================================================
@@ -23,6 +23,12 @@ CREATE TABLE IF NOT EXISTS `classes` (
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Atualização Segura: Garante que as colunas existam mesmo se a tabela já foi criada
+-- (MariaDB 10.2+ suporta IF NOT EXISTS no ALTER TABLE, comum na Hostinger)
+ALTER TABLE `classes` ADD COLUMN IF NOT EXISTS `is_remediation` TINYINT(1) DEFAULT 0;
+ALTER TABLE `classes` ADD COLUMN IF NOT EXISTS `teacher_ids` JSON;
+ALTER TABLE `classes` ADD COLUMN IF NOT EXISTS `focus_skills` JSON;
+
 -- 2. TABELA DE ALUNOS (students)
 CREATE TABLE IF NOT EXISTS `students` (
     `id` VARCHAR(36) NOT NULL,
@@ -36,11 +42,17 @@ CREATE TABLE IF NOT EXISTS `students` (
     `status` VARCHAR(20) DEFAULT 'active',
     `remediation_entry_date` DATETIME,
     `remediation_exit_date` DATETIME,
+    `has_specificities` TINYINT(1) DEFAULT 0, -- Nova coluna
+    `specificity_description` TEXT, -- Nova coluna
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     KEY `idx_class_id` (`class_id`),
     CONSTRAINT `fk_student_class` FOREIGN KEY (`class_id`) REFERENCES `classes` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Atualização Segura
+ALTER TABLE `students` ADD COLUMN IF NOT EXISTS `has_specificities` TINYINT(1) DEFAULT 0;
+ALTER TABLE `students` ADD COLUMN IF NOT EXISTS `specificity_description` TEXT;
 
 -- 3. TABELA DE USUÁRIOS (users)
 CREATE TABLE IF NOT EXISTS `users` (
@@ -65,6 +77,8 @@ CREATE TABLE IF NOT EXISTS `skills` (
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+ALTER TABLE `skills` ADD COLUMN IF NOT EXISTS `year` VARCHAR(50);
+
 -- 5. TABELA DE AVALIAÇÕES (assessments)
 CREATE TABLE IF NOT EXISTS `assessments` (
     `id` VARCHAR(36) NOT NULL,
@@ -85,6 +99,11 @@ CREATE TABLE IF NOT EXISTS `assessments` (
     CONSTRAINT `fk_assessment_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_assessment_skill` FOREIGN KEY (`skill_id`) REFERENCES `skills` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+ALTER TABLE `assessments` ADD COLUMN IF NOT EXISTS `subject_id` VARCHAR(36);
+ALTER TABLE `assessments` ADD COLUMN IF NOT EXISTS `participation_score` DECIMAL(4, 2);
+ALTER TABLE `assessments` ADD COLUMN IF NOT EXISTS `behavior_score` DECIMAL(4, 2);
+ALTER TABLE `assessments` ADD COLUMN IF NOT EXISTS `exam_score` DECIMAL(4, 2);
 
 -- 6. TABELA DE DISCIPLINAS (subjects)
 CREATE TABLE IF NOT EXISTS `subjects` (

@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { 
   BarChart, 
@@ -16,7 +17,7 @@ import {
   AreaChart,
   Area
 } from 'recharts';
-import { Users, BookOpen, AlertCircle, CheckCircle, Filter, ChevronUp, ChevronDown, BarChart2, Megaphone, Calendar, TrendingUp, Activity, Briefcase, GraduationCap } from 'lucide-react';
+import { Users, BookOpen, AlertCircle, CheckCircle, Filter, ChevronUp, ChevronDown, BarChart2, Megaphone, Calendar, TrendingUp, Activity, Briefcase, GraduationCap, Puzzle } from 'lucide-react';
 import { Assessment, AssessmentStatus, ClassGroup, Skill, Student, User, Notice, ClassDailyLog } from '../types';
 
 interface DashboardProps {
@@ -78,6 +79,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const totalStudents = students.length;
   const activeStudents = students.filter(s => s.status !== 'inactive').length;
   const totalSkills = skills.length;
+  
+  // Specificity Metrics
+  const specificityCount = students.filter(s => s.hasSpecificities && s.status === 'active').length;
+  const specificityRate = activeStudents > 0 ? Math.round((specificityCount / activeStudents) * 100) : 0;
   
   // Remediation
   const remediationCases = filteredAssessments.filter(a => a.status === AssessmentStatus.NAO_ATINGIU || a.status === AssessmentStatus.EM_DESENVOLVIMENTO).length;
@@ -211,11 +216,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       trend="stable"
                   />
                   <ExecutiveCard 
-                      title="Frequência Global" 
-                      value={`${executiveMetrics.globalAttendanceRate}%`} 
-                      subValue="Média de todas as turmas"
-                      icon={<Activity size={24} className={executiveMetrics.globalAttendanceRate > 85 ? "text-green-500" : "text-orange-500"} />}
-                      trend={executiveMetrics.globalAttendanceRate > 85 ? "up" : "down"}
+                      title="Taxa de Inclusão" 
+                      value={`${specificityRate}%`} 
+                      subValue={`${specificityCount} Alunos com NEE`}
+                      icon={<Puzzle size={24} className="text-teal-500" />}
+                      trend="up"
                   />
                   <ExecutiveCard 
                       title="Taxa de Aprovação" 
@@ -426,11 +431,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
           bg="bg-[#c48b5e]/10"
         />
         <KpiCard 
-          title="Habilidades BNCC" 
-          value={totalSkills} 
-          icon={<BookOpen size={24} />} 
-          color="text-[#8c7e72]"
-          bg="bg-[#8c7e72]/10"
+          title="Taxa de Inclusão" 
+          value={`${specificityRate}%`} 
+          icon={<Puzzle size={24} />} 
+          color="text-teal-600"
+          bg="bg-teal-100"
+          subtitle={`${specificityCount} Alunos com NEE`}
         />
         <KpiCard 
           title="Casos de Reforço" 

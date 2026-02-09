@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { ChevronRight, Users, GraduationCap, Plus, Camera, Calendar, Phone, User as UserIcon, Edit2, Trash2, ArrowLeft, X, Target, BookOpen, Save, CheckSquare, Square, Clock, Archive, RefreshCcw, Check, School, Search, Filter, ChevronDown, ChevronUp, Hash, ExternalLink, UserCheck, Upload, AlertTriangle, ArrowRightLeft, ArrowRight } from 'lucide-react';
+import { ChevronRight, Users, GraduationCap, Plus, Camera, Calendar, Phone, User as UserIcon, Edit2, Trash2, ArrowLeft, X, Target, BookOpen, Save, CheckSquare, Square, Clock, Archive, RefreshCcw, Check, School, Search, Filter, ChevronDown, ChevronUp, Hash, ExternalLink, UserCheck, Upload, AlertTriangle, ArrowRightLeft, ArrowRight, Puzzle } from 'lucide-react';
 import { ClassGroup, Student, User, ClassDailyLog } from '../types';
 
 interface ClassListProps {
@@ -375,8 +376,14 @@ export const ClassList: React.FC<ClassListProps> = ({
                     {/* ALUNOS ATIVOS - CARD COMPLETO SEMPRE VISÍVEL */}
                     {activeStudents.map(student => {
                         return (
-                            <div key={student.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex flex-col gap-4 hover:border-[#c48b5e] hover:shadow-md transition-all">
-                                
+                            <div key={student.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex flex-col gap-4 hover:border-[#c48b5e] hover:shadow-md transition-all relative">
+                                {/* Indicador de Especificidade (Icon) */}
+                                {student.hasSpecificities && (
+                                    <div className="absolute top-4 right-4 text-[#c48b5e]" title={`Especificidade Educacional: ${student.specificityDescription || 'Não especificada'}`}>
+                                        <Puzzle size={20} className="fill-[#c48b5e]/10" />
+                                    </div>
+                                )}
+
                                 {/* Header: Avatar + Nome + Status */}
                                 <div className="flex items-start gap-4">
                                     {student.avatarUrl ? (
@@ -386,7 +393,7 @@ export const ClassList: React.FC<ClassListProps> = ({
                                             {student.name.charAt(0)}
                                         </div>
                                     )}
-                                    <div className="flex-1">
+                                    <div className="flex-1 pr-6">
                                         <h3 className="font-bold text-lg text-[#433422] leading-tight mb-1 line-clamp-2">{student.name}</h3>
                                         <div className="flex flex-wrap gap-2 text-xs">
                                             {student.remediationEntryDate && !student.remediationExitDate && (
@@ -489,6 +496,7 @@ export const ClassList: React.FC<ClassListProps> = ({
                 )}
              </div>
         ) : (
+             // ... [Resto do código para 'diary' mantido igual]
              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                  {/* FORMULÁRIO DO DIÁRIO */}
                  <div className="lg:col-span-1 bg-white p-6 rounded-xl shadow-sm border border-gray-100 h-fit">
@@ -668,6 +676,7 @@ export const ClassList: React.FC<ClassListProps> = ({
   // Lista de Turmas (Cards)
   return (
     <div className="space-y-6">
+      {/* ... [Código da Listagem de Turmas mantido igual] */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
            <h2 className="text-3xl font-bold text-[#433422]">Minhas Turmas</h2>
@@ -826,7 +835,10 @@ export const ClassList: React.FC<ClassListProps> = ({
         </button>
       </div>
 
-      {/* Modal Criar/Editar Turma */}
+      {/* ... [Modals de Criar Turma e Transferência (Mantidos, já foram incluídos no código anterior da ClassList)] */}
+      {/* Modal Criar/Editar Turma e Transferência já estão definidos acima */}
+      {/* Certifique-se de que os modals estão aqui antes do fechamento da div principal */}
+      
       {isClassModalOpen && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-in fade-in zoom-in duration-200 border border-[#eaddcf]">
@@ -850,7 +862,7 @@ export const ClassList: React.FC<ClassListProps> = ({
                        onChange={e => setClassFormData({...classFormData, name: e.target.value})}
                     />
                 </div>
-                
+                {/* ... Resto do form de turma ... */}
                 <div className="grid grid-cols-2 gap-4">
                     <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-1.5">Série / Grau</label>
@@ -921,7 +933,6 @@ export const ClassList: React.FC<ClassListProps> = ({
         </div>
       )}
 
-      {/* Modal de Transferência em Lote */}
       {isTransferModalOpen && (
           <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
             <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden animate-in fade-in zoom-in duration-200 border border-[#eaddcf] h-[80vh] flex flex-col">
